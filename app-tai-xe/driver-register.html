@@ -375,7 +375,7 @@
         for (const key in compressedFiles) { formData.append(key, compressedFiles[key]); }
         
         try {
-            const response = await fetch(`http://localhost:3000/api/declarations/${registrationId}`, {
+            const response = await fetch(`/api/declarations/${registrationId}`, {
                 method: 'PUT',
                 body: formData
             });
