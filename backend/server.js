@@ -1,9 +1,4 @@
 // server.js
-app.get('/healthz', (req, res) => res.status(200).send('OK'));
-server.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
-});
-
 // --- 1. IMPORT CÁC THƯ VIỆN CẦN THIẾT ---
 const express = require('express');
 const mongoose = require('mongoose');
@@ -26,6 +21,9 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ✅ Health check cho Render
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
 
 // --- 4. KẾT NỐI DATABASE & CẤU HÌNH CLOUDINARY ---
 cloudinary.config({
@@ -315,6 +313,7 @@ app.get('/api/requests/:id', async (req, res, next) => {
         next(error);
     }
 });
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 app.put('/api/declarations/:id', upload.fields([
@@ -370,6 +369,7 @@ app.get('/api/registrations', async (req, res, next) => {
         next(error);
     }
 });
+
 const handleCheckAction = async (req, res, action) => {
     try {
         const { id } = req.params;
@@ -388,8 +388,10 @@ const handleCheckAction = async (req, res, action) => {
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
     }
 };
+
 app.post('/api/registrations/:id/checkin', (req, res) => handleCheckAction(req, res, 'checkin'));
 app.post('/api/registrations/:id/checkout', (req, res) => handleCheckAction(req, res, 'checkout'));
+
 app.get('/api/statistics', async (req, res, next) => {
     try {
         const today = new Date();
@@ -407,6 +409,7 @@ app.get('/api/statistics', async (req, res, next) => {
         next(error);
     }
 });
+
 app.get('/api/registrations/history', async (req, res, next) => {
     try {
         const { start, end, q, priority, type } = req.query;
@@ -482,8 +485,8 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.' });
 });
 
-
 // --- 9. KHỞI ĐỘNG SERVER ---
-server.listen(port, () => {
+// ✅ bind 0.0.0.0 để nhận request từ Render
+server.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
 });
