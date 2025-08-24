@@ -12,7 +12,7 @@
             font-family: 'Inter', sans-serif;
         }
         .login-bg {
-            background-image: url('.///images/Cover.png');
+            background-image: url('./images/Cover.png');
             background-size: cover;
             background-position: center;
         }
@@ -102,11 +102,13 @@
                     if (response.ok) {
                         localStorage.setItem('td_auth_token', result.token);
                         
-                        // Chuyển hướng dựa trên vai trò của người dùng
+                        // *** FIX: Sửa đường dẫn chuyển hướng thành đường dẫn tuyệt đối ***
                         if (result.role === 'admin') {
-                            window.location.href = './cms.html';
+                            // Đường dẫn đúng là /cms/cms.html
+                            window.location.href = '/cms/cms.html';
                         } else if (result.role === 'staff') {
-                            window.location.href = './app-bao-ve/security-approved.html';
+                            // Đường dẫn đúng là /cms/app-bao-ve/security-approved.html
+                            window.location.href = '/cms/app-bao-ve/security-approved.html';
                         }
                     } else {
                         errorMessage.textContent = result.message || 'Đã xảy ra lỗi.';
