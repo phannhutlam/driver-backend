@@ -9,6 +9,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const bcrypt = require('bcryptjs'); 
 const jwt = require('jsonwebtoken'); 
+const path = require('path'); // ✅ thêm để phục vụ file tĩnh
 require('dotenv').config();
 
 // --- 2. KHỞI TẠO SERVER & CẤU HÌNH ---
@@ -24,6 +25,16 @@ app.use(express.urlencoded({ extended: true }));
 
 // ✅ Health check cho Render
 app.get('/healthz', (req, res) => res.status(200).send('OK'));
+
+// ✅ Serve UI tĩnh trực tiếp từ backend
+// CMS ở root "/"
+app.use(express.static(path.resolve(__dirname, '../cms')));
+app.get('/', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../cms/index.html'));
+});
+// (tuỳ chọn) các app khác
+app.use('/app-noi-bo', express.static(path.resolve(__dirname, '../app-noi-bo')));
+app.use('/app-tai-xe', express.static(path.resolve(__dirname, '../app-tai-xe')));
 
 // --- 4. KẾT NỐI DATABASE & CẤU HÌNH CLOUDINARY ---
 cloudinary.config({
@@ -388,10 +399,8 @@ const handleCheckAction = async (req, res, action) => {
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
     }
 };
-
 app.post('/api/registrations/:id/checkin', (req, res) => handleCheckAction(req, res, 'checkin'));
 app.post('/api/registrations/:id/checkout', (req, res) => handleCheckAction(req, res, 'checkout'));
-
 app.get('/api/statistics', async (req, res, next) => {
     try {
         const today = new Date();
@@ -409,7 +418,6 @@ app.get('/api/statistics', async (req, res, next) => {
         next(error);
     }
 });
-
 app.get('/api/registrations/history', async (req, res, next) => {
     try {
         const { start, end, q, priority, type } = req.query;
