@@ -9,7 +9,7 @@ const http = require('http');
 const WebSocket = require('ws');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const path = require('path'); // Cần module 'path'
+const path = require('path');
 require('dotenv').config();
 
 // --- 2. KHỞI TẠO SERVER & CẤU HÌNH ---
@@ -22,25 +22,15 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// *** FIX: Sửa đường dẫn phục vụ file tĩnh ***
-// Thay vì phục vụ từ thư mục 'backend' (__dirname),
-// chúng ta sẽ phục vụ từ thư mục gốc của dự án (đi lên một cấp).
 app.use(express.static(path.join(__dirname, '..')));
 
-// *** NEW: Thêm endpoint kiểm tra "sức khỏe" cho nền tảng triển khai ***
 app.get('/healthz', (req, res) => {
-    // Trả về status 200 OK để báo cho nền tảng biết server vẫn đang hoạt động
     res.status(200).json({ status: 'ok', message: 'Server is healthy' });
 });
 
-// *** NEW: Thêm route xử lý cho trang chủ (/) để trỏ về trang đăng nhập ***
 app.get('/', (req, res) => {
-    // Phục vụ trang đăng nhập chính khi người dùng truy cập vào địa chỉ gốc.
-    // Đường dẫn được giải quyết từ thư mục gốc của dự án.
     res.sendFile(path.join(__dirname, '..', 'cms', 'user-login.html'));
 });
-
 
 // --- 4. KẾT NỐI DATABASE & CẤU HÌNH CLOUDINARY ---
 cloudinary.config({
@@ -98,8 +88,29 @@ const registrationSchema = new mongoose.Schema({
 }, { timestamps: true });
 const Registration = mongoose.model('Registration', registrationSchema);
 
+// --- 6. MIDDLEWARE XÁC THỰC & PHÂN QUYỀN ---
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.status(401).json({ message: 'Không có token, xác thực thất bại.' });
 
-// --- 6. LOGIC REAL-TIME (WEBSOCKET) ---
+    jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, user) => {
+        if (err) return res.status(403).json({ message: 'Token không hợp lệ.' });
+        req.user = user;
+        next();
+    });
+};
+
+const verifyAdmin = (req, res, next) => {
+    verifyToken(req, res, () => {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Yêu cầu quyền Admin.' });
+        }
+        next();
+    });
+};
+
+// --- 7. LOGIC REAL-TIME (WEBSOCKET) ---
 const broadcastUpdate = () => {
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
@@ -119,9 +130,9 @@ function listenForDBChanges() {
 
 wss.on('connection', ws => console.log('ℹ️ Một client đã kết nối WebSocket.'));
 
-// --- 7. CÁC API ENDPOINTS (Không bảo mật) ---
+// --- 8. CÁC API ENDPOINTS ---
 
-// API xác thực: Đăng nhập (Vẫn giữ lại phòng khi cần)
+// A. API Xác thực
 app.post('/api/auth/login', async (req, res, next) => {
     try {
         const { username, password } = req.body;
@@ -136,39 +147,72 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
 });
 
-// --- API QUẢN LÝ ---
-// (Toàn bộ các API /api/admin/* được giữ nguyên)
-// ...
+// B. API Quản lý (Admin) - *** NEW: Bổ sung đầy đủ các API quản lý người dùng ***
+const adminRouter = express.Router();
+adminRouter.use(verifyAdmin); // Áp dụng middleware cho tất cả route admin
 
-// --- API NGHIỆP VỤ ---
+adminRouter.get('/users', async (req, res, next) => {
+    try {
+        const users = await User.find({}, '-password'); // Lấy tất cả user, trừ trường password
+        res.json(users);
+    } catch (error) {
+        next(error);
+    }
+});
+
+adminRouter.post('/users', async (req, res, next) => {
+    try {
+        const { username, password, role } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ username, password: hashedPassword, role });
+        await newUser.save();
+        res.status(201).json({ message: 'Tạo người dùng thành công.' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+adminRouter.put('/users/:id', async (req, res, next) => {
+    try {
+        const { role } = req.body;
+        await User.findByIdAndUpdate(req.params.id, { role });
+        res.json({ message: 'Cập nhật vai trò thành công.' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+adminRouter.put('/users/:id/reset-password', async (req, res, next) => {
+    try {
+        const { newPassword } = req.body;
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await User.findByIdAndUpdate(req.params.id, { password: hashedPassword });
+        res.json({ message: 'Đặt lại mật khẩu thành công.' });
+    } catch (error) {
+        next(error);
+    }
+});
+
+adminRouter.delete('/users/:id', async (req, res, next) => {
+    try {
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Xóa người dùng thành công.' });
+    } catch (error) {
+        next(error);
+    }
+});
+app.use('/api/admin', adminRouter); // Gắn router admin vào app
+
+// C. API Nghiệp vụ
 app.post('/api/requests', async (req, res, next) => {
     try {
         const { employeeName, employeeDepartment, supplierName, expectedDate, reason, priority } = req.body;
-        
         if (!employeeName || !employeeDepartment || !supplierName || !expectedDate || !reason || !priority) {
             return res.status(400).json({ message: 'Vui lòng điền đầy đủ tất cả thông tin.' });
         }
-        
-        const employee = await Employee.findOneAndUpdate(
-            { name: employeeName, department: employeeDepartment },
-            { $set: { name: employeeName, department: employeeDepartment } },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-
-        const supplier = await Supplier.findOneAndUpdate(
-            { name: supplierName },
-            { $set: { name: supplierName } },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-
-        const newRequest = new Registration({
-            employee: employee._id,
-            supplier: supplier._id,
-            expectedDate,
-            reason,
-            priority
-        });
-
+        const employee = await Employee.findOneAndUpdate({ name: employeeName, department: employeeDepartment }, { $set: { name: employeeName, department: employeeDepartment } }, { upsert: true, new: true });
+        const supplier = await Supplier.findOneAndUpdate({ name: supplierName }, { $set: { name: supplierName } }, { upsert: true, new: true });
+        const newRequest = new Registration({ employee: employee._id, supplier: supplier._id, expectedDate, reason, priority });
         await newRequest.save();
         res.status(201).json({ message: 'Tạo yêu cầu thành công!', id: newRequest._id });
     } catch (error) {
@@ -179,13 +223,9 @@ app.post('/api/requests', async (req, res, next) => {
 app.get('/api/requests/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return res.status(400).json({ message: 'ID không hợp lệ.' });
-        }
+        if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'ID không hợp lệ.' });
         const request = await Registration.findById(id).populate('employee').populate('supplier');
-        if (!request) {
-            return res.status(404).json({ message: 'Không tìm thấy yêu cầu.' });
-        }
+        if (!request) return res.status(404).json({ message: 'Không tìm thấy yêu cầu.' });
         res.status(200).json({
             employeeName: request.employee ? request.employee.name : 'Không rõ',
             department: request.employee ? request.employee.department : 'Không rõ',
@@ -197,6 +237,7 @@ app.get('/api/requests/:id', async (req, res, next) => {
         next(error);
     }
 });
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 app.put('/api/declarations/:id', upload.fields([
@@ -207,13 +248,18 @@ app.put('/api/declarations/:id', upload.fields([
         const { driverName, driverIdCard, licensePlate, vehicleType } = req.body;
         const files = req.files;
 
+        // *** FIX: Kiểm tra sự tồn tại của cả 3 tệp ảnh ***
+        if (!files || !files.idCardPhoto || !files.licensePlatePhoto || !files.vehiclePhoto) {
+            return res.status(400).json({ message: 'Vui lòng tải lên đủ 3 hình ảnh: CCCD, Biển số, và Toàn cảnh xe.' });
+        }
+
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'ID không hợp lệ.' });
 
-        const normalizedLicensePlate = licensePlate.toUpperCase();
+        const normalizedLicensePlate = licensePlate.toUpperCase().replace(/[^A-Z0-9]/g, '');
         let vehicle = await Vehicle.findOneAndUpdate(
             { licensePlate: normalizedLicensePlate },
             { driverName, driverIdCard, vehicleType, lastRegistered: new Date() },
-            { new: true, upsert: true, setDefaultsOnInsert: true }
+            { new: true, upsert: true }
         );
 
         const uploadToCloudinary = (file) => new Promise((resolve, reject) => {
@@ -240,7 +286,7 @@ app.put('/api/declarations/:id', upload.fields([
     }
 });
 
-app.get('/api/registrations', async (req, res, next) => {
+app.get('/api/registrations', verifyToken, async (req, res, next) => {
     try {
         const registrations = await Registration.find({})
             .populate('employee', 'name department')
@@ -252,95 +298,47 @@ app.get('/api/registrations', async (req, res, next) => {
         next(error);
     }
 });
+
 const handleCheckAction = async (req, res, action) => {
     try {
         const { id } = req.params;
         const update = action === 'checkin'
             ? { status: 'Đã vào cổng', checkInTime: new Date() }
             : { status: 'Đã rời cổng', checkOutTime: new Date() };
-
-        const updated = await Registration.findByIdAndUpdate(id, update, { new: true })
-            .populate('employee', 'name department')
-            .populate('supplier', 'name')
-            .populate('vehicle', 'licensePlate driverName driverIdCard vehicleType');
-
+        const updated = await Registration.findByIdAndUpdate(id, update, { new: true });
         if (!updated) return res.status(404).json({ message: 'Không tìm thấy' });
         res.status(200).json(updated);
     } catch (error) {
         res.status(500).json({ message: 'Lỗi máy chủ nội bộ.' });
     }
 };
-app.post('/api/registrations/:id/checkin', (req, res) => handleCheckAction(req, res, 'checkin'));
-app.post('/api/registrations/:id/checkout', (req, res) => handleCheckAction(req, res, 'checkout'));
-app.get('/api/statistics', async (req, res, next) => {
+
+app.post('/api/registrations/:id/checkin', verifyToken, (req, res) => handleCheckAction(req, res, 'checkin'));
+app.post('/api/registrations/:id/checkout', verifyToken, (req, res) => handleCheckAction(req, res, 'checkout'));
+
+app.get('/api/registrations/history', verifyAdmin, async (req, res, next) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const totalToday = await Registration.countDocuments({ createdAt: { $gte: today, $lt: tomorrow } });
-        const checkedIn = await Registration.countDocuments({ status: 'Đã vào cổng' });
-        const pending = await Registration.countDocuments({ status: { $in: ['Chờ khai báo', 'Đã khai báo'] } });
-        const completedToday = await Registration.countDocuments({ status: 'Đã rời cổng', checkOutTime: { $gte: today, $lt: tomorrow } });
-
-        res.status(200).json({ totalToday, checkedIn, pending, completedToday });
-    } catch (error) {
-        next(error);
-    }
-});
-app.get('/api/registrations/history', async (req, res, next) => {
-    try {
-        const { start, end, q, priority, type } = req.query;
-
-        if (!start || !end) {
-            return res.status(400).json({ message: 'Ngày bắt đầu và kết thúc là bắt buộc.' });
-        }
-
+        const { start, end, q } = req.query;
+        if (!start || !end) return res.status(400).json({ message: 'Ngày bắt đầu và kết thúc là bắt buộc.' });
+        
         const startDate = new Date(start);
         startDate.setHours(0, 0, 0, 0);
-
         const endDate = new Date(end);
         endDate.setHours(23, 59, 59, 999);
         
-        const query = {
-            createdAt: {
-                $gte: startDate,
-                $lte: endDate
-            }
-        };
-
-        if (priority) {
-            query.priority = priority;
-        }
+        const query = { createdAt: { $gte: startDate, $lte: endDate } };
 
         if (q) {
             const regex = new RegExp(q, 'i');
             const employees = await Employee.find({ name: regex }).select('_id');
             const suppliers = await Supplier.find({ name: regex }).select('_id');
-            const vehicles = await Vehicle.find({ $or: [{ licensePlate: regex }, { driverName: regex }, { vehicleType: regex }] }).select('_id');
-
-            const orConditions = [
-                { reason: regex }
+            const vehicles = await Vehicle.find({ $or: [{ licensePlate: regex }, { driverName: regex }] }).select('_id');
+            query.$or = [
+                { reason: regex },
+                { employee: { $in: employees.map(e => e._id) } },
+                { supplier: { $in: suppliers.map(s => s._id) } },
+                { vehicle: { $in: vehicles.map(v => v._id) } },
             ];
-            if (employees.length > 0) orConditions.push({ employee: { $in: employees.map(emp => emp._id) } });
-            if (suppliers.length > 0) orConditions.push({ supplier: { $in: suppliers.map(sup => sup._id) } });
-            if (vehicles.length > 0) orConditions.push({ vehicle: { $in: vehicles.map(veh => veh._id) } });
-
-            if (orConditions.length > 0) {
-                query.$or = orConditions;
-            }
-        }
-        
-        if (type) {
-             const vehiclesByType = await Vehicle.find({ vehicleType: new RegExp(type, 'i') }).select('_id');
-             const vehicleIds = vehiclesByType.map(v => v._id);
-             
-             if (query.vehicle && query.vehicle.$in) {
-                 query.vehicle.$in = [...new Set([...query.vehicle.$in, ...vehicleIds])];
-             } else {
-                 query.vehicle = { $in: vehicleIds };
-             }
         }
 
         const historyLogs = await Registration.find(query)
@@ -348,24 +346,22 @@ app.get('/api/registrations/history', async (req, res, next) => {
             .populate('supplier', 'name')
             .populate('vehicle', 'licensePlate driverName vehicleType')
             .sort({ createdAt: -1 });
-
         res.status(200).json(historyLogs);
     } catch (error) {
         next(error);
     }
 });
 
-// Middleware xử lý lỗi tập trung
+// --- 9. MIDDLEWARE XỬ LÝ LỖI ---
 app.use((err, req, res, next) => {
     console.error(err.stack);
     if (err.code === 11000) {
         return res.status(409).json({ message: 'Dữ liệu bị trùng lặp. Vui lòng kiểm tra lại.' });
     }
-    res.status(500).json({ message: 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.' });
+    res.status(500).json({ message: err.message || 'Lỗi máy chủ nội bộ. Vui lòng thử lại sau.' });
 });
 
-
-// --- 9. KHỞI ĐỘNG SERVER ---
+// --- 10. KHỞI ĐỘNG SERVER ---
 server.listen(port, () => {
     console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
 });

@@ -26,7 +26,6 @@
             cursor: pointer;
             opacity: 0.6;
         }
-        /* *** NEW: Styles for top navigation *** */
         .top-nav-btn {
             transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
             border-bottom: 2px solid transparent;
@@ -41,19 +40,15 @@
 </head>
 <body class="bg-slate-100">
     
-    <!-- *** CHANGE: Replaced Sidebar with Top Navigation Header *** -->
     <header class="bg-white shadow-md sticky top-0 z-10">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <!-- Logo and Branding -->
                 <div class="flex items-center space-x-4">
                     <a href="#" class="flex items-center space-x-3">
                         <img src="images/logo.png" alt="Logo Thái Dương" class="h-10 w-auto">
                         <span class="text-lg font-semibold text-gray-700 hidden sm:block">CMS Quản lí xe - Thái Dương</span>
                     </a>
                 </div>
-
-                <!-- Navigation Menu -->
                 <nav class="flex h-full items-center space-x-4">
                     <button id="nav-report" class="top-nav-btn h-full px-3 text-sm font-medium text-gray-500 hover:text-brand-blue">
                         Báo cáo & Lịch sử
@@ -62,8 +57,6 @@
                         Quản lý tài khoản
                     </button>
                 </nav>
-
-                <!-- User Info and Logout -->
                 <div class="flex items-center space-x-4">
                     <span id="greeting" class="text-gray-700 font-medium text-sm hidden md:block">Xin chào, Admin!</span>
                     <button id="logoutBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600">Đăng xuất</button>
@@ -72,14 +65,10 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Báo cáo & Lịch sử -->
         <div id="content-report" class="tab-content">
-            <!-- Filters -->
             <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- Date Filter -->
                     <div class="md:col-span-2">
                         <label for="date-filter" class="block text-sm font-medium text-gray-700 mb-1">Chọn ngày</label>
                         <div class="flex items-center space-x-2">
@@ -88,15 +77,12 @@
                             <button id="yesterday-btn" class="px-3 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300">Hôm qua</button>
                         </div>
                     </div>
-                    <!-- Search -->
                     <div>
                         <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">Tìm kiếm</label>
                         <input type="text" id="search-input" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-brand-orange focus:border-brand-orange" placeholder="Biển số, tài xế...">
                     </div>
                 </div>
             </div>
-
-            <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div class="bg-white p-4 rounded-lg shadow-sm flex items-center">
                     <div class="p-3 rounded-full bg-blue-100"><svg class="h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25" /></svg></div>
@@ -113,46 +99,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
-                <!-- Main Bar Chart -->
-                <div class="lg:col-span-3 bg-white p-4 rounded-lg shadow-sm">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Biểu đồ lượt xe</h3>
-                        <div class="flex space-x-1 bg-gray-200 p-1 rounded-lg">
-                            <button id="week-chart-btn" class="px-3 py-1 text-sm font-medium rounded-md">Theo Tuần</button>
-                            <button id="month-chart-btn" class="px-3 py-1 text-sm font-medium rounded-md">Theo Tháng</button>
-                        </div>
-                    </div>
-                    <div class="h-80">
-                        <canvas id="vehicleChart"></canvas>
-                    </div>
-                </div>
-                <!-- Doughnut Charts -->
-                <div class="lg:col-span-2 space-y-4">
-                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Tỷ trọng xe theo Loại xe</h3>
-                        <div class="h-32">
-                            <canvas id="vehicleTypeChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Tỷ trọng xe theo Phòng ban</h3>
-                        <div class="h-32">
-                            <canvas id="departmentChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-white p-4 rounded-lg shadow-sm">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Tỷ trọng xe theo Nhà cung cấp</h3>
-                        <div class="h-32">
-                            <canvas id="supplierChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- History Table -->
             <div class="bg-white rounded-lg shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-500">
@@ -164,14 +110,11 @@
                                 <th scope="col" class="px-6 py-3">Thời gian vào</th>
                                 <th scope="col" class="px-6 py-3">Thời gian ra</th>
                                 <th scope="col" class="px-6 py-3">Tổng thời gian</th>
-                                <!-- *** NEW: Thêm cột Hình ảnh *** -->
                                 <th scope="col" class="px-6 py-3">Hình ảnh</th>
                                 <th scope="col" class="px-6 py-3">Người đăng ký</th>
                             </tr>
                         </thead>
-                        <tbody id="history-table-body">
-                            <!-- Rows will be injected by JS -->
-                        </tbody>
+                        <tbody id="history-table-body"></tbody>
                     </table>
                 </div>
                 <div id="no-data-message" class="text-center py-16 text-gray-500 hidden">
@@ -182,12 +125,11 @@
             </div>
         </div>
 
-        <!-- Quản lý tài khoản (Users) -->
         <div id="content-users" class="tab-content hidden">
             <h2 class="text-xl font-bold mb-4">Quản lý Tài khoản</h2>
             <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">Thêm tài khoản mới</h3>
-                <form id="addUserForm" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <form id="addUserForm" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
                         <label for="newUsername" class="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
                         <input type="text" id="newUsername" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-brand-blue focus:border-brand-blue">
@@ -203,7 +145,7 @@
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-                    <button type="submit" class="w-full md:col-span-1 px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-medium hover:bg-brand-main-dark">
+                    <button type="submit" class="w-full px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-medium hover:bg-blue-700">
                         Thêm
                     </button>
                 </form>
@@ -220,28 +162,24 @@
                                 <th scope="col" class="px-6 py-3">Hành động</th>
                             </tr>
                         </thead>
-                        <tbody id="user-table-body">
-                            <!-- User rows will be injected by JS -->
-                        </tbody>
+                        <tbody id="user-table-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </main>
     
-    <!-- Custom Modal for Alerts and Confirms -->
     <div id="custom-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 shadow-xl w-full max-w-sm mx-4">
             <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
             <p id="modal-message" class="text-sm text-gray-600"></p>
             <div id="modal-buttons" class="mt-4 flex justify-end space-x-2">
                 <button id="modal-cancel-btn" class="px-4 py-2 text-sm rounded-lg bg-gray-200 hover:bg-gray-300">Hủy</button>
-                <button id="modal-ok-btn" class="px-4 py-2 text-sm rounded-lg bg-brand-blue text-white hover:bg-brand-main-dark">OK</button>
+                <button id="modal-ok-btn" class="px-4 py-2 text-sm rounded-lg bg-brand-blue text-white hover:bg-blue-800">OK</button>
             </div>
         </div>
     </div>
 
-    <!-- *** NEW: Image Preview Modal *** -->
     <div id="imagePreviewModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] hidden preview-backdrop">
         <div class="relative p-4 preview-panel">
             <button id="closePreviewBtn" class="absolute -top-2 -right-2 text-white bg-gray-800 rounded-full h-8 w-8 text-2xl flex items-center justify-center">&times;</button>
@@ -252,10 +190,12 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const token = localStorage.getItem('td_auth_token');
-            let userRole = 'admin';
-            let currentUsername = 'AdminTest';
-            document.getElementById('greeting').textContent = `Xin chào, ${currentUsername}!`;
-
+            // *** FIX: Chuyển sang xác thực phía server, không dựa vào client ***
+            if (!token) {
+                window.location.href = './user-login.html';
+                return;
+            }
+            
             const API_BASE = '/api';
             const datePicker = document.getElementById('date-picker');
             const todayBtn = document.getElementById('today-btn');
@@ -265,11 +205,8 @@
             const noDataMessage = document.getElementById('no-data-message');
             const totalVehiclesEl = document.getElementById('total-vehicles');
             const avgDurationEl = document.getElementById('avg-duration');
-            const weekChartBtn = document.getElementById('week-chart-btn');
-            const monthChartBtn = document.getElementById('month-chart-btn');
             const logoutBtn = document.getElementById('logoutBtn');
 
-            // *** CHANGE: Updated navigation elements ***
             const navReport = document.getElementById('nav-report');
             const navUsers = document.getElementById('nav-users');
             const contentReport = document.getElementById('content-report');
@@ -285,14 +222,10 @@
             const modalOkBtn = document.getElementById('modal-ok-btn');
             const modalCancelBtn = document.getElementById('modal-cancel-btn');
 
-            // *** NEW: Image preview elements ***
             const imagePreviewModal = document.getElementById('imagePreviewModal');
             const previewImage = document.getElementById('previewImage');
             const closePreviewBtn = document.getElementById('closePreviewBtn');
 
-            let vehicleChart, vehicleTypeChart, departmentChart, supplierChart = null;
-            const chartColors = ['#1e3a8a', '#f97316', '#16a34a', '#ca8a04', '#6d28d9', '#db2777'];
-            
             function showTab(tabId) {
                 document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
                 document.querySelectorAll('.top-nav-btn').forEach(el => el.classList.remove('active'));
@@ -302,20 +235,21 @@
                 
                 if (tabId === 'content-report') {
                     filterAndRender();
-                    renderBarChart('week');
-                    setActiveChartButton('week');
-                    renderDoughnutChart('vehicleTypeChart', 'vehicleType', 'Loại xe');
-                    renderDoughnutChart('departmentChart', 'department', 'Phòng ban');
-                    renderDoughnutChart('supplierChart', 'supplier', 'Nhà cung cấp');
                 } else if (tabId === 'content-users') {
                     fetchUsers();
                 }
             }
 
+            // *** NEW: Hàm fetch đã được thêm header Authorization ***
             async function fetchWithAuth(url, options = {}) {
-                const response = await fetch(url, options);
-                if (!response.ok && (response.status === 401 || response.status === 403)) {
-                    showModal('Lỗi', 'Phiên làm việc đã hết hạn hoặc bạn không có quyền.', false);
+                const headers = {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`
+                };
+                const response = await fetch(url, { ...options, headers });
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('td_auth_token');
+                    window.location.href = './user-login.html';
                     return null;
                 }
                 return response;
@@ -359,8 +293,6 @@
                 data.forEach(item => {
                     const duration = calculateDuration(item.checkInTime, item.checkOutTime);
                     totalDurationMinutes += duration.minutes;
-
-                    // *** NEW: Create HTML for image thumbnails ***
                     const imagesHTML = `
                         <div class="flex items-center gap-1">
                             ${item.imageUrls?.idCardPhoto ? `<a href="${item.imageUrls.idCardPhoto}" class="img-link"><img src="${item.imageUrls.idCardPhoto}" class="w-10 h-10 object-cover rounded-md border" alt="CCCD"/></a>` : ''}
@@ -368,7 +300,6 @@
                             ${item.imageUrls?.vehiclePhoto ? `<a href="${item.imageUrls.vehiclePhoto}" class="img-link"><img src="${item.imageUrls.vehiclePhoto}" class="w-10 h-10 object-cover rounded-md border" alt="Xe"/></a>` : ''}
                         </div>
                     `;
-
                     const row = `
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.vehicle?.licensePlate || 'N/A'}</td>
@@ -385,124 +316,6 @@
 
                 totalVehiclesEl.textContent = data.length;
                 avgDurationEl.textContent = data.length > 0 ? calculateDuration(0, (totalDurationMinutes / data.length) * 60000).text : '0 phút';
-            }
-
-            function processBarChartData(period, data) {
-                const counts = new Map();
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                let startDate;
-                
-                if (period === 'week') {
-                    startDate = new Date(today);
-                    startDate.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
-                    for (let i = 0; i < 7; i++) {
-                        const date = new Date(startDate);
-                        date.setDate(startDate.getDate() + i);
-                        counts.set(toYYYYMMDD(date), 0);
-                    }
-                } else {
-                    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-                    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-                    for (let i = 0; i < daysInMonth; i++) {
-                        const date = new Date(startDate);
-                        date.setDate(startDate.getDate() + i);
-                        counts.set(toYYYYMMDD(date), 0);
-                    }
-                }
-                
-                data.forEach(item => {
-                    if (item.checkInTime) {
-                         const itemDate = toYYYYMMDD(new Date(item.checkInTime));
-                        if (counts.has(itemDate)) {
-                            counts.set(itemDate, counts.get(itemDate) + 1);
-                        }
-                    }
-                });
-                
-                const labels = Array.from(counts.keys()).map(dateStr => {
-                    const date = new Date(dateStr);
-                    return `${date.getDate()}/${date.getMonth() + 1}`;
-                });
-                const chartData = Array.from(counts.values());
-                return { labels, data: chartData };
-            }
-
-            async function renderBarChart(period) {
-                try {
-                    const start = period === 'week' ? new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + (new Date().getDay() === 0 ? -6 : 1))) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-                    const end = new Date();
-                    const response = await fetchWithAuth(`${API_BASE}/registrations/history?start=${toYYYYMMDD(start)}&end=${toYYYYMMDD(end)}`);
-                    if (!response) return;
-                    const historyData = await response.json();
-                    const { labels, data } = processBarChartData(period, historyData);
-                    const ctx = document.getElementById('vehicleChart').getContext('2d');
-                    if (vehicleChart) vehicleChart.destroy();
-                    vehicleChart = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels,
-                            datasets: [{
-                                label: 'Số lượt xe',
-                                data,
-                                backgroundColor: 'rgba(30, 58, 138, 0.8)',
-                                borderRadius: 4,
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
-                    });
-                } catch (error) {
-                    console.error('Lỗi khi vẽ biểu đồ:', error);
-                }
-            }
-
-            function processDoughnutData(category, data) {
-                const counts = new Map();
-                data.forEach(item => {
-                    let key = 'Không rõ';
-                    if (category === 'vehicleType' && item.vehicle) key = item.vehicle.vehicleType;
-                    else if (category === 'department' && item.employee) key = item.employee.department;
-                    else if (category === 'supplier' && item.supplier) key = item.supplier.name;
-                    if(key) counts.set(key, (counts.get(key) || 0) + 1);
-                });
-                const sortedData = new Map([...counts.entries()].sort((a, b) => b[1] - a[1]));
-                return {
-                    labels: Array.from(sortedData.keys()),
-                    data: Array.from(sortedData.values())
-                };
-            }
-
-            async function renderDoughnutChart(chartId, category, title) {
-                try {
-                    const response = await fetchWithAuth(`${API_BASE}/registrations/history?start=1970-01-01&end=${toYYYYMMDD(new Date())}`);
-                    if (!response) return;
-                    const historyData = await response.json();
-                    const { labels, data } = processDoughnutData(category, historyData);
-                    const ctx = document.getElementById(chartId).getContext('2d');
-                    
-                    // *** FIX: Correctly destroy old chart instance ***
-                    if (window[chartId + '_instance']) {
-                        window[chartId + '_instance'].destroy();
-                    }
-
-                    window[chartId + '_instance'] = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels,
-                            datasets: [{ label: title, data, backgroundColor: chartColors, borderColor: '#ffffff', borderWidth: 2 }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, padding: 10, font: { size: 10 } } } } }
-                    });
-                } catch (error) {
-                    console.error('Lỗi khi vẽ biểu đồ:', error);
-                }
-            }
-            
-            function setActiveChartButton(period) {
-                weekChartBtn.classList.toggle('bg-white', period === 'week');
-                weekChartBtn.classList.toggle('text-brand-blue', period === 'week');
-                monthChartBtn.classList.toggle('bg-white', period === 'month');
-                monthChartBtn.classList.toggle('text-brand-blue', period === 'month');
             }
             
             async function fetchUsers() {
@@ -624,7 +437,7 @@
                     newInput.placeholder = 'Nhập mật khẩu mới';
                     newInput.className = 'w-full px-3 py-2 border rounded-lg mt-2';
                     modalMessage.parentNode.insertBefore(newInput, modalMessage.nextSibling);
-                    modalOkBtn.onclick = () => { onConfirm(newInput.value); hideModal(); };
+                    modalOkBtn.onclick = () => { if(newInput.value) { onConfirm(newInput.value); hideModal(); } };
                 } else {
                     modalOkBtn.onclick = () => { onConfirm(); hideModal(); };
                 }
@@ -638,7 +451,6 @@
                 customModal.classList.remove('flex');
             }
 
-            // *** NEW: Event listeners for image preview ***
             document.body.addEventListener('click', (e) => {
                 const imgLink = e.target.closest('.img-link');
                 if (imgLink) {
@@ -654,8 +466,6 @@
                 }
             });
 
-
-            // Event Listeners
             navReport.addEventListener('click', () => showTab('content-report'));
             navUsers.addEventListener('click', () => showTab('content-users'));
 
@@ -664,9 +474,6 @@
             datePicker.addEventListener('change', filterAndRender);
             searchInput.addEventListener('input', filterAndRender);
             
-            weekChartBtn.addEventListener('click', () => { renderBarChart('week'); setActiveChartButton('week'); });
-            monthChartBtn.addEventListener('click', () => { renderBarChart('month'); setActiveChartButton('month'); });
-
             logoutBtn.addEventListener('click', () => { localStorage.removeItem('td_auth_token'); window.location.href = './user-login.html'; });
             
             addUserForm.addEventListener('submit', async (e) => {
@@ -691,7 +498,6 @@
                 }
             });
 
-            // Initial Load
             datePicker.value = toYYYYMMDD(new Date());
             showTab('content-report');
         });
