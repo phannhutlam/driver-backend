@@ -1,4 +1,9 @@
 // server.js
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
+server.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server đang chạy tại http://localhost:${port}`);
+});
+
 // --- 1. IMPORT CÁC THƯ VIỆN CẦN THIẾT ---
 const express = require('express');
 const mongoose = require('mongoose');
