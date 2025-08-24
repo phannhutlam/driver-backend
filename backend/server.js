@@ -28,6 +28,20 @@ app.use(express.urlencoded({ extended: true }));
 // chúng ta sẽ phục vụ từ thư mục gốc của dự án (đi lên một cấp).
 app.use(express.static(path.join(__dirname, '..')));
 
+// *** NEW: Thêm endpoint kiểm tra "sức khỏe" cho nền tảng triển khai ***
+app.get('/healthz', (req, res) => {
+    // Trả về status 200 OK để báo cho nền tảng biết server vẫn đang hoạt động
+    res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+});
+
+// *** NEW: Thêm route xử lý cho trang chủ (/) để trỏ về trang đăng nhập ***
+app.get('/', (req, res) => {
+    // Phục vụ trang đăng nhập chính khi người dùng truy cập vào địa chỉ gốc.
+    // Đường dẫn được giải quyết từ thư mục gốc của dự án.
+    res.sendFile(path.join(__dirname, '..', 'cms', 'user-login.html'));
+});
+
+
 // --- 4. KẾT NỐI DATABASE & CẤU HÌNH CLOUDINARY ---
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
