@@ -372,7 +372,11 @@
 
         const formData = new FormData();
         for(const fieldName in textFields) { formData.append(fieldName, textFields[fieldName].input.value); }
-        for (const key in compressedFiles) { formData.append(key, compressedFiles[key]); }
+        
+        // *** FIX: Kiểm tra sự tồn tại của tệp trước khi thêm vào formData ***
+        if (compressedFiles.idCardPhoto) formData.append('idCardPhoto', compressedFiles.idCardPhoto);
+        if (compressedFiles.licensePlatePhoto) formData.append('licensePlatePhoto', compressedFiles.licensePlatePhoto);
+        if (compressedFiles.vehiclePhoto) formData.append('vehiclePhoto', compressedFiles.vehiclePhoto);
         
         try {
             const response = await fetch(`/api/declarations/${registrationId}`, {
