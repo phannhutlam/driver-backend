@@ -221,7 +221,7 @@
       }
 
       try {
-          const response = await fetch(`http://localhost:3000/api/requests/${registrationId}`);
+          const response = await fetch(`/api/requests/${registrationId}`);
           if (!response.ok) {
               const err = await response.json();
               throw new Error(err.message || 'Không tìm thấy yêu cầu hoặc yêu cầu không hợp lệ.');
