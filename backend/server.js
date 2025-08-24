@@ -7,8 +7,8 @@ const cloudinary = require('cloudinary').v2;
 const cors = require('cors');
 const http = require('http');
 const WebSocket = require('ws');
-const bcrypt = require('bcryptjs'); 
-const jwt = require('jsonwebtoken'); 
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const path = require('path'); // Cần module 'path'
 require('dotenv').config();
 
@@ -22,14 +22,11 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname))); // Phục vụ các file tĩnh như html, css
 
-// *** NEW: Thêm route xử lý cho trang chủ (/) ***
-// Route này sẽ gửi file index.html khi người dùng truy cập vào địa chỉ gốc
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
+// *** FIX: Sửa đường dẫn phục vụ file tĩnh ***
+// Thay vì phục vụ từ thư mục 'backend' (__dirname),
+// chúng ta sẽ phục vụ từ thư mục gốc của dự án (đi lên một cấp).
+app.use(express.static(path.join(__dirname, '..')));
 
 // --- 4. KẾT NỐI DATABASE & CẤU HÌNH CLOUDINARY ---
 cloudinary.config({
@@ -150,12 +147,12 @@ app.post('/api/requests', async (req, res, next) => {
             { upsert: true, new: true, setDefaultsOnInsert: true }
         );
 
-        const newRequest = new Registration({ 
-            employee: employee._id, 
-            supplier: supplier._id, 
-            expectedDate, 
-            reason, 
-            priority 
+        const newRequest = new Registration({
+            employee: employee._id,
+            supplier: supplier._id,
+            expectedDate,
+            reason,
+            priority
         });
 
         await newRequest.save();
