@@ -147,13 +147,13 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
 });
 
-// B. API Quản lý (Admin) - *** NEW: Bổ sung đầy đủ các API quản lý người dùng ***
+// B. API Quản lý (Admin)
 const adminRouter = express.Router();
-adminRouter.use(verifyAdmin); // Áp dụng middleware cho tất cả route admin
+adminRouter.use(verifyAdmin);
 
 adminRouter.get('/users', async (req, res, next) => {
     try {
-        const users = await User.find({}, '-password'); // Lấy tất cả user, trừ trường password
+        const users = await User.find({}, '-password');
         res.json(users);
     } catch (error) {
         next(error);
@@ -201,7 +201,7 @@ adminRouter.delete('/users/:id', async (req, res, next) => {
         next(error);
     }
 });
-app.use('/api/admin', adminRouter); // Gắn router admin vào app
+app.use('/api/admin', adminRouter);
 
 // C. API Nghiệp vụ
 app.post('/api/requests', async (req, res, next) => {
@@ -248,7 +248,6 @@ app.put('/api/declarations/:id', upload.fields([
         const { driverName, driverIdCard, licensePlate, vehicleType } = req.body;
         const files = req.files;
 
-        // *** FIX: Kiểm tra sự tồn tại của cả 3 tệp ảnh ***
         if (!files || !files.idCardPhoto || !files.licensePlatePhoto || !files.vehiclePhoto) {
             return res.status(400).json({ message: 'Vui lòng tải lên đủ 3 hình ảnh: CCCD, Biển số, và Toàn cảnh xe.' });
         }
@@ -263,6 +262,9 @@ app.put('/api/declarations/:id', upload.fields([
         );
 
         const uploadToCloudinary = (file) => new Promise((resolve, reject) => {
+            if (!process.env.CLOUDINARY_CLOUD_NAME) {
+                return reject(new Error("Chưa cấu hình Cloudinary."));
+            }
             const stream = cloudinary.uploader.upload_stream({ folder: "driver_registrations" }, (err, result) => err ? reject(err) : resolve(result.secure_url));
             stream.end(file.buffer);
         });
@@ -316,7 +318,8 @@ const handleCheckAction = async (req, res, action) => {
 app.post('/api/registrations/:id/checkin', verifyToken, (req, res) => handleCheckAction(req, res, 'checkin'));
 app.post('/api/registrations/:id/checkout', verifyToken, (req, res) => handleCheckAction(req, res, 'checkout'));
 
-app.get('/api/registrations/history', verifyAdmin, async (req, res, next) => {
+// *** FIX: Thay đổi middleware từ verifyAdmin sang verifyToken ***
+app.get('/api/registrations/history', verifyToken, async (req, res, next) => {
     try {
         const { start, end, q } = req.query;
         if (!start || !end) return res.status(400).json({ message: 'Ngày bắt đầu và kết thúc là bắt buộc.' });
