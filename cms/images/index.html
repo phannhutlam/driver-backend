@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMS - Quản Lý Xe Ra/Vào</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Be Vietnam Pro', sans-serif; }
+        .modal-backdrop { background-color: rgba(0,0,0,0.6); }
+        .modal-panel { max-height: 90vh; }
+        .stat-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        tbody tr { transition: background-color 0.15s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Hệ Thống Quản Lý Xe</h1>
+                <p class="text-gray-600 mt-1 flex items-center gap-2">
+                    <span id="connectionStatus" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></span>
+                    <span id="connectionText">Đang kết nối tới server...</span>
+                    <button id="retryButton" class="hidden ml-2 text-sm text-indigo-600 hover:underline">Thử lại</button>
+                </p>
+                 <div id="lastUpdated" class="text-sm text-gray-500 mt-2 sm:mt-0"></div>
+            </div>
+            <div>
+                <img src="../app-tai-xe/images/logo.png" alt="Logo" class="h-14 w-auto" onerror="this.style.display='none'">
+            </div>
+        </header>
+
+        <!-- Thống kê -->
+        <div id="statsSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+             <div class="stat-card bg-white border border-gray-200 p-6 rounded-xl">
+                <h3 class="text-base font-semibold text-gray-500">Tổng Lượt Hôm Nay</h3>
+                <p id="statTotalToday" class="text-4xl font-bold text-blue-600 mt-2">0</p>
+            </div>
+            <div class="stat-card bg-white border border-gray-200 p-6 rounded-xl">
+                <h3 class="text-base font-semibold text-gray-500">Chờ Xử Lý</h3>
+                <p id="statPending" class="text-4xl font-bold text-yellow-500 mt-2">0</p>
+            </div>
+            <div class="stat-card bg-white border border-gray-200 p-6 rounded-xl">
+                <h3 class="text-base font-semibold text-gray-500">Đang Trong Cổng</h3>
+                <p id="statCheckedIn" class="text-4xl font-bold text-green-500 mt-2">0</p>
+            </div>
+            <div class="stat-card bg-white border border-gray-200 p-6 rounded-xl">
+                <h3 class="text-base font-semibold text-gray-500">Hoàn Tất Hôm Nay</h3>
+                <p id="statCompletedToday" class="text-4xl font-bold text-gray-800 mt-2">0</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="p-4 flex flex-col sm:flex-row justify-between items-center border-b border-gray-200">
+                <div class="relative w-full sm:max-w-xs">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
+                    </div>
+                    <input type="text" id="searchInput" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tìm kiếm...">
+                </div>
+                 <button id="refreshButton" class="mt-4 sm:mt-0 w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.878-1.162l-1.614-1.615a6 6 0 11-8.546-8.546L2.985 19.644z" /></svg>
+                    Làm mới
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Nhân Viên ĐK</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Nhà Cung Cấp</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Tài Xế</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Biển Số Xe</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Thời Gian Vào</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Thời Gian Ra</th>
+                            <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase">Trạng Thái</th>
+                            <th class="px-6 py-3 text-center text-xs font-bold text-gray-600 uppercase">Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="registrationsTable" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('registrationsTable');
+            const searchInput = document.getElementById('searchInput');
+            const lastUpdatedEl = document.getElementById('lastUpdated');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const connectionText = document.getElementById('connectionText');
+            const retryButton = document.getElementById('retryButton');
+            const refreshButton = document.getElementById('refreshButton');
+            let allRegistrations = [];
+            
+            const API_URL = 'http://localhost:3000/api';
+            const WS_URL = 'ws://localhost:3000';
+
+            let reconnectAttempts = 0;
+            let reconnectTimeout;
+
+            const statusStyles = {
+                'Chờ khai báo': { icon: '🕒', classes: 'bg-gray-100 text-gray-800' },
+                'Đã khai báo': { icon: '🔵', classes: 'bg-blue-100 text-blue-800' },
+                'Đã vào cổng': { icon: '✅', classes: 'bg-green-100 text-green-800' },
+                'Đã rời cổng': { icon: '🔴', classes: 'bg-red-100 text-red-800' },
+            };
+
+            const priorityColors = {
+                'Thấp': 'bg-green-500',
+                'Trung bình': 'bg-yellow-500',
+                'Cao': 'bg-red-500',
+            };
+
+            const formatDate = (isoString) => {
+                if (!isoString) return '—';
+                return new Date(isoString).toLocaleString('vi-VN', {
+                    hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+                });
+            };
+
+            const renderTable = (data) => {
+                tableBody.innerHTML = '';
+                if (data.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-500">Không tìm thấy dữ liệu.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(reg => {
+                    const statusInfo = statusStyles[reg.status] || { icon: '⚪', classes: 'bg-gray-100 text-gray-800' };
+                    const priorityClass = priorityColors[reg.priority] || 'bg-gray-300';
+                    let actionButton = `<span class="text-gray-400 text-sm">Chờ...</span>`;
+                    
+                    if (reg.status === 'Đã khai báo') {
+                        actionButton = `<button data-id="${reg._id}" class="check-in-btn px-3 py-1.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md flex items-center gap-2 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
+                            Check-in
+                        </button>`;
+                    } else if (reg.status === 'Đã vào cổng') {
+                        actionButton = `<button data-id="${reg._id}" class="check-out-btn px-3 py-1.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md flex items-center gap-2 shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m5 4v1a3 3 0 003 3h4a3 3 0 003-3V7a3 3 0 00-3-3H7a3 3 0 00-3 3v1"></path></svg>
+                            Check-out
+                        </button>`;
+                    } else if (reg.status === 'Đã rời cổng') {
+                        actionButton = `<span class="text-sm text-gray-500">Hoàn tất</span>`;
+                    }
+
+                    const row = `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4"><div class="text-sm font-medium text-gray-900">${reg.employeeName || '—'}</div><div class="text-sm text-gray-500">${reg.department || '—'}</div></td>
+                            <td class="px-6 py-4"><div class="text-sm font-medium text-gray-900">${reg.supplierName || '—'}</div><div class="text-sm text-gray-500">${reg.reason || '—'}</div></td>
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">${reg.driverName || '—'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">${reg.licensePlate || '—'}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">${formatDate(reg.checkInTime)}</td>
+                            <td class="px-6 py-4 text-sm text-gray-600">${formatDate(reg.checkOutTime)}</td>
+                            <td class="px-6 py-4">
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusInfo.classes}">
+                                    <span class="w-2 h-2 rounded-full mr-2 ${priorityClass}" style="align-self: center;"></span>
+                                    ${reg.status}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center text-sm font-medium">${actionButton}</td>
+                        </tr>
+                    `;
+                    tableBody.insertAdjacentHTML('beforeend', row);
+                });
+            };
+
+            const fetchRegistrations = async () => {
+                const response = await fetch(`${API_URL}/registrations`);
+                if (!response.ok) throw new Error('Network response was not ok for registrations');
+                allRegistrations = await response.json();
+                const searchTerm = searchInput.value.toLowerCase();
+                const filteredData = searchTerm ? allRegistrations.filter(reg => 
+                    (reg.licensePlate || '').toLowerCase().includes(searchTerm) ||
+                    (reg.driverName || '').toLowerCase().includes(searchTerm)
+                ) : allRegistrations;
+                renderTable(filteredData);
+            };
+            
+            const fetchStatistics = async () => {
+                const response = await fetch(`${API_URL}/statistics`);
+                if (!response.ok) throw new Error('Network response was not ok for statistics');
+                const stats = await response.json();
+                document.getElementById('statTotalToday').textContent = stats.totalToday;
+                document.getElementById('statPending').textContent = stats.pending;
+                document.getElementById('statCheckedIn').textContent = stats.checkedIn;
+                document.getElementById('statCompletedToday').textContent = stats.completedToday;
+            };
+            
+            const fetchAllData = async () => {
+                try {
+                    await Promise.all([fetchRegistrations(), fetchStatistics()]);
+                    lastUpdatedEl.textContent = `Cập nhật lần cuối: ${new Date().toLocaleTimeString('vi-VN')}`;
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center p-8 text-gray-700">
+                                <p class="font-bold text-red-600">Không thể tải dữ liệu!</p>
+                                <p class="text-sm text-gray-600 mt-2">Vui lòng đảm bảo server back-end đang chạy và thử lại.</p>
+                            </td>
+                        </tr>
+                    `;
+                    // SỬA LỖI: Không ném lỗi ra ngoài để tránh làm sập kết nối WebSocket
+                }
+            };
+
+            const handleAction = async (id, action) => {
+                try {
+                    const response = await fetch(`${API_URL}/registrations/${id}/${action}`, { method: 'POST' });
+                    if (!response.ok) throw new Error('Hành động thất bại');
+                } catch (error) {
+                    console.error(`Lỗi ${action}:`, error);
+                    alert(`Không thể ${action}. Vui lòng thử lại.`);
+                }
+            };
+
+            tableBody.addEventListener('click', (e) => {
+                const button = e.target.closest('button');
+                if (!button) return;
+                const id = button.dataset.id;
+                if (!id) return;
+
+                if (button.classList.contains('check-in-btn')) {
+                    if (confirm('Xác nhận cho xe này VÀO CỔNG?')) handleAction(id, 'checkin');
+                } else if (button.classList.contains('check-out-btn')) {
+                    if (confirm('Xác nhận cho xe này RỜI CỔNG?')) handleAction(id, 'checkout');
+                }
+            });
+
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredData = allRegistrations.filter(reg => 
+                    (reg.licensePlate || '').toLowerCase().includes(searchTerm) ||
+                    (reg.driverName || '').toLowerCase().includes(searchTerm) ||
+                    (reg.supplierName || '').toLowerCase().includes(searchTerm) ||
+                    (reg.employeeName || '').toLowerCase().includes(searchTerm)
+                );
+                renderTable(filteredData);
+            });
+            
+            function connectWebSocket() {
+                clearTimeout(reconnectTimeout);
+                connectionStatus.classList.add('animate-pulse', 'bg-yellow-400');
+                connectionStatus.classList.remove('bg-gray-400', 'bg-red-500', 'bg-green-500');
+                connectionText.textContent = 'Đang kết nối...';
+                retryButton.classList.add('hidden');
+
+                const ws = new WebSocket(WS_URL);
+
+                ws.onopen = () => {
+                    console.log('✅ WebSocket đã kết nối.');
+                    connectionStatus.classList.remove('animate-pulse', 'bg-yellow-400', 'bg-red-500');
+                    connectionStatus.classList.add('bg-green-500');
+                    connectionText.textContent = 'Đã kết nối (real-time)';
+                    reconnectAttempts = 0;
+                    fetchAllData();
+                };
+
+                ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'update') {
+                        console.log('⚡ Nhận được tín hiệu cập nhật từ server!');
+                        fetchAllData();
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log('🔴 WebSocket đã ngắt kết nối.');
+                    reconnectAttempts++;
+                    const delay = Math.min(30000, Math.pow(2, reconnectAttempts) * 1000);
+                    
+                    connectionStatus.classList.remove('bg-green-500', 'bg-yellow-400');
+                    connectionStatus.classList.add('bg-red-500', 'animate-pulse');
+                    connectionText.textContent = `Mất kết nối. Thử lại sau ${delay / 1000}s...`;
+                    retryButton.classList.remove('hidden');
+
+                    reconnectTimeout = setTimeout(connectWebSocket, delay);
+                };
+
+                ws.onerror = (error) => {
+                    console.error('Lỗi WebSocket:', error);
+                    ws.close();
+                };
+            }
+            
+            retryButton.addEventListener('click', () => {
+                reconnectAttempts = 0;
+                connectWebSocket();
+            });
+            
+            refreshButton.addEventListener('click', fetchAllData);
+
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>

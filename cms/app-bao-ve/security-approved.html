@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bảng Điều Khiển Cổng - Thái Dương</title>
+
+  <script>
+    window.tailwind = window.tailwind || {};
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { inter: ['Inter','ui-sans-serif','system-ui'] },
+          colors: { brand: { blue: '#1e3a8a' } },
+          boxShadow: { soft: '0 8px 24px rgba(0,0,0,0.08)' }
+        }
+      }
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .kanban-column { min-height: 64vh; }
+    .vehicle-card { transition: opacity .25s ease, transform .2s ease, max-height .35s ease, margin .3s ease, padding .3s ease; }
+    .vehicle-card.removing { opacity: 0; transform: scale(.98); max-height: 0; margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; border-width: 0 !important; }
+    .modal-backdrop, .preview-backdrop { transition: opacity .25s ease; }
+    .modal-panel, .preview-panel { transition: transform .25s ease, opacity .25s ease; }
+    .skeleton { background: linear-gradient(90deg, #f0f0f0, #e0e0e0, #f0f0f0); background-size: 200% 100%; animation: shine 1.2s infinite; }
+    @keyframes shine { to { background-position: -200% 0; } }
+    .tab-btn.active { border-color: #2563eb; color: #2563eb; background-color: #eff6ff; }
+    .date-filter-btn.active { background-color: #2563eb; color: white; }
+    
+    .custom-select-container { position: relative; }
+    .custom-select-options { display: none; position: absolute; top: 100%; left: 0; right: 0; background-color: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; margin-top: 0.25rem; z-index: 20; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+    .custom-select-options.open { display: block; }
+    .custom-select-option { padding: 0.5rem 1rem; cursor: pointer; }
+    .custom-select-option:hover { background-color: #f1f5f9; }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+  <div id="app-container">
+    <header class="bg-white/90 backdrop-blur shadow-sm sticky top-0 z-30">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center gap-3">
+                <img src="images/logo.png" alt="Logo Thái Dương" class="h-10 w-auto">            <div>
+                <h1 class="text-lg sm:text-xl font-bold text-brand-blue">Kiểm Soát Cổng</h1><p class="text-xs text-gray-500">Phần mềm kiểm soát dành cho bảo vệ</p></div>
+            </div>
+            <div>
+              <button id="logoutBtn" class="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600">Đăng xuất</button>
+            </div>
+        </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+            <button id="live-tab" class="tab-btn active whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm">Trực Tiếp</button>
+            <button id="history-tab" class="tab-btn whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">Lịch Sử Ra Vào</button>
+        </nav>
+        </div>
+    </div>
+
+    <div id="live-view">
+        <!-- *** CHANGE: Đồng bộ UI thanh filter *** -->
+        <section class="container mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <div class="bg-white p-3 rounded-xl shadow-md">
+                <div class="flex flex-wrap lg:flex-nowrap items-center gap-3">
+                    <div class="relative w-full lg:w-auto lg:flex-grow">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg></div>
+                        <input id="searchInput" type="text" placeholder="Tìm biển số, tài xế, nhà cung cấp..." class="w-full pl-10 rounded-xl border-slate-200 text-sm py-2.5 focus:ring-2 focus:ring-blue-400"/>
+                    </div>
+                    <div id="priorityFilterContainer" class="custom-select-container w-full sm:w-1/3 lg:w-auto lg:flex-grow-[0.5]"></div>
+                    <div id="typeFilterContainer" class="custom-select-container w-full sm:w-1/3 lg:w-auto lg:flex-grow-[0.5]"></div>
+                    <div class="w-full sm:w-auto">
+                        <button id="clearFilters" class="w-full rounded-xl px-4 py-2 text-sm border border-slate-200 hover:bg-slate-100">Xóa Lọc</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8"><div class="grid grid-cols-1 lg:grid-cols-2 gap-6"><div class="bg-slate-100/70 rounded-2xl p-4 shadow-soft"><h2 class="text-base sm:text-lg font-bold mb-4 flex items-center">Chờ Check-in <span id="waitingCount" class="ml-2 bg-yellow-200 text-yellow-800 text-xs font-semibold px-2.5 py-1 rounded-full">0</span></h2><div id="panel-waiting" class="kanban-column space-y-4"></div></div><div class="bg-slate-100/70 rounded-2xl p-4 shadow-soft"><h2 class="text-base sm:text-lg font-bold mb-4 flex items-center">Đang Trong Công Ty <span id="insideCount" class="ml-2 bg-green-200 text-green-800 text-xs font-semibold px-2.5 py-1 rounded-full">0</span></h2><div id="panel-inside" class="kanban-column space-y-4"></div></div></div></main>
+    </div>
+
+    <div id="history-view" class="hidden">
+        <section class="container mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+            <div class="bg-white p-3 rounded-xl shadow-md">
+                <div class="flex flex-wrap lg:flex-nowrap items-center gap-3">
+                    <div class="flex items-center gap-2 p-1 bg-gray-100 rounded-xl">
+                        <button id="filter-today" class="date-filter-btn px-3 py-1.5 text-sm rounded-lg">Hôm nay</button>
+                        <button id="filter-this-week" class="date-filter-btn px-3 py-1.5 text-sm rounded-lg">Tuần này</button>
+                        <button id="filter-this-month" class="date-filter-btn px-3 py-1.5 text-sm rounded-lg">Tháng này</button>
+                    </div>
+                    <div class="relative w-full lg:w-auto lg:flex-grow">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg></div>
+                        <input type="text" id="historySearch" placeholder="Tìm biển số, tài xế, nhân viên..." class="w-full pl-10 rounded-xl border-slate-200 text-sm py-2.5 focus:ring-2 focus:ring-blue-400">
+                    </div>
+                    <div id="historyPriorityFilterContainer" class="custom-select-container w-full sm:w-1/2 lg:w-auto lg:flex-grow-[1]"></div>
+                    <!-- *** REMOVED: Bỏ filter Loại xe *** -->
+                    <div class="w-full lg:w-auto">
+                        <button id="clearHistoryFilters" class="w-full rounded-xl px-4 py-2 text-sm border border-slate-200 hover:bg-slate-100">Xóa Lọc</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8"><div class="overflow-x-auto bg-white rounded-2xl shadow-soft"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">Biển số</th><th scope="col" class="px-6 py-3">Tài xế</th><th scope="col" class="px-6 py-3">Nhân viên ĐK</th><th scope="col" class="px-6 py-3">Lý do</th><th scope="col" class="px-6 py-3">Ảnh</th><th scope="col" class="px-6 py-3">Giờ vào</th><th scope="col" class="px-6 py-3">Giờ ra</th><th scope="col" class="px-6 py-3">Thời gian</th></tr></thead><tbody id="history-table-body"><tr><td colspan="8" class="text-center p-8 text-gray-400">Chọn ngày để xem lịch sử.</td></tr></tbody></table></div></main>
+    </div>
+  </div>
+
+  <div id="error-container" class="hidden container mx-auto px-4 sm:px-6 lg:px-8 mt-16 text-center">
+    <!-- Error 401: Unauthorized -->
+    <div id="error-401" class="hidden">
+        <svg class="mx-auto h-16 w-16 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H4.5a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+        <h2 class="mt-4 text-2xl font-bold text-gray-800">Lỗi Xác Thực</h2>
+        <p class="mt-2 text-gray-600">Token xác thực của bạn không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.</p>
+    </div>
+    <!-- Error 403: Forbidden -->
+    <div id="error-403" class="hidden">
+        <svg class="mx-auto h-16 w-16 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+        <h2 class="mt-4 text-2xl font-bold text-gray-800">Không Có Quyền Truy Cập</h2>
+        <p class="mt-2 text-gray-600">Bạn không có quyền để truy cập tài nguyên này.</p>
+    </div>
+    <!-- Error 500: Internal Server Error -->
+    <div id="error-500" class="hidden">
+         <svg class="mx-auto h-16 w-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
+        <h2 class="mt-4 text-2xl font-bold text-gray-800">Lỗi Máy Chủ</h2>
+        <p class="mt-2 text-gray-600">Đã có lỗi xảy ra ở phía máy chủ. Vui lòng thử lại sau.</p>
+    </div>
+    <!-- Error 503: Service Unavailable -->
+    <div id="error-503" class="hidden">
+        <svg class="mx-auto h-16 w-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.852l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        <h2 class="mt-4 text-2xl font-bold text-gray-800">Dịch Vụ Không Khả Dụng</h2>
+        <p class="mt-2 text-gray-600">Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.</p>
+    </div>
+    <button id="retry-btn" class="mt-8 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700">Thử Lại</button>
+  </div>
+
+  <div id="detailsModal" class="fixed inset-0 bg-slate-900/60 overflow-y-auto h-full w-full z-50 hidden modal-backdrop"><div class="relative top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 w-full max-w-2xl shadow-xl rounded-2xl bg-white modal-panel"><div id="modalContent"></div></div></div>
+  <div id="imagePreviewModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] hidden preview-backdrop"><div class="relative p-4 preview-panel"><button id="closePreviewBtn" class="absolute -top-2 -right-2 text-white bg-gray-800 rounded-full h-8 w-8 text-2xl flex items-center justify-center">&times;</button><img id="previewImage" src="" class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl" alt="Xem trước ảnh"/></div></div>
+  <div id="toast" class="fixed bottom-4 right-4 z-50 hidden"><div class="rounded-xl bg-slate-900 text-white px-4 py-3 text-sm shadow-lg flex items-center gap-2"><span id="toastIcon">ℹ️</span><span id="toastText"></span></div></div>
+  
+  <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-[70] hidden modal-backdrop"><div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm modal-panel"><h3 class="text-lg font-bold text-gray-800">Xác nhận hành động</h3><p id="confirmMessage" class="mt-2 text-sm text-gray-600">Bạn có chắc chắn muốn thực hiện hành động này?</p><div class="mt-6 flex justify-end gap-3"><button id="confirmCancelBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Hủy</button><button id="confirmOkBtn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700">Xác nhận</button></div></div></div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // ---------- CONFIG ----------
+    const API_BASE = '/api';
+    const WS_URL = 'ws://localhost:3000';
+    
+    let AUTH_TOKEN = localStorage.getItem('td_auth_token'); 
+    let USER_ROLE = '';
+
+    // --- PAGE PROTECTION & AUTH CHECK ---
+    // Bỏ qua để test, bạn có thể bật lại sau
+    // try {
+    //     if (!AUTH_TOKEN) {
+    //         window.location.href = '../user-login.html';
+    //         return;
+    //     }
+    //     const tokenPayload = JSON.parse(atob(AUTH_TOKEN.split('.')[1]));
+    //     USER_ROLE = tokenPayload.role;
+
+    //     if (USER_ROLE !== 'staff') {
+    //         window.location.href = '../cms.html';
+    //         return;
+    //     }
+    // } catch (e) {
+    //     console.error("Lỗi xác thực token:", e);
+    //     localStorage.removeItem('td_auth_token');
+    //     window.location.href = '../user-login.html';
+    //     return;
+    // }
+
+    // ---------- STATE ----------
+    let allRegistrations = [], filteredRegistrations = [], historyLogs = [], ws = null;
+    let currentPriorityFilter = '', currentTypeFilter = '';
+    let currentHistoryPriority = '';
+    let activeDateFilter = 'today';
+
+    // ---------- ELEMENTS ----------
+    const $ = (selector) => document.getElementById(selector);
+    const appContainer = $('app-container'), errorContainer = $('error-container');
+    const liveView = $('live-view'), historyView = $('history-view'), liveTab = $('live-tab'), historyTab = $('history-tab');
+    const waitingListPanel = $('panel-waiting'), insideListPanel = $('panel-inside');
+    const modal = $('detailsModal'), modalContent = $('modalContent');
+    const imagePreviewModal = $('imagePreviewModal'), previewImage = $('previewImage'), closePreviewBtn = $('closePreviewBtn');
+    const searchInput = $('searchInput'), clearFilters = $('clearFilters');
+    const historySearch = $('historySearch'), historyTableBody = $('history-table-body'), clearHistoryFilters = $('clearHistoryFilters');
+    const toast = $('toast'), toastText = $('toastText');
+    const confirmModal = $('confirmModal'), confirmMessage = $('confirmMessage'), confirmOkBtn = $('confirmOkBtn'), confirmCancelBtn = $('confirmCancelBtn');
+    const dateFilterButtons = { today: $('filter-today'), this_week: $('filter-this-week'), this_month: $('filter-this-month') };
+    const errorPages = { 401: $('error-401'), 403: $('error-403'), 500: $('error-500'), 503: $('error-503') };
+    const retryBtn = $('retry-btn');
+    const logoutBtn = $('logoutBtn');
+
+    // ---------- UTILS ----------
+    const priorityStyles = { 'Thấp': { border: 'border-green-500', text: 'text-green-700', bg: 'bg-green-100' }, 'Trung bình': { border: 'border-yellow-500', text: 'text-yellow-700', bg: 'bg-yellow-100' }, 'Cao': { border: 'border-red-500', text: 'text-red-700', bg: 'bg-red-100' } };
+    function debounce(fn, delay = 400) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), delay); }; }
+    function showToast(msg, success = true) { toastText.textContent = msg || (success ? 'Thành công' : 'Thất bại'); $('toastIcon').textContent = success ? '✅' : '❌'; toast.classList.remove('hidden'); setTimeout(() => toast.classList.add('hidden'), 2200); }
+    const formatLicensePlate = (plate) => { if (!plate) return 'N/A'; plate = plate.toUpperCase().replace(/[^A-Z0-9]/g, ''); return plate.length > 5 ? `${plate.slice(0,3)} - ${plate.slice(3)}` : plate; };
+    const formatExpectedDate = (isoString) => { if (!isoString) return ''; const today = new Date(); today.setHours(0,0,0,0); const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1); const expected = new Date(isoString); expected.setHours(0,0,0,0); if (expected.getTime() === today.getTime()) return `<span class="text-blue-600 font-semibold">Hôm nay</span>`; if (expected.getTime() === tomorrow.getTime()) return `<span class="text-purple-600 font-semibold">Ngày mai</span>`; return expected.toLocaleDateString('vi-VN'); };
+    const formatDuration = (start, end) => { if (!start || !end) return 'N/A'; let diff = (new Date(end) - new Date(start)) / 60000; if (diff < 60) return `${Math.round(diff)} phút`; const hours = Math.floor(diff / 60); const minutes = Math.round(diff % 60); return `${hours} giờ ${minutes} phút`; };
+
+    // ---------- ERROR HANDLING & UI STATE ----------
+    function showErrorPage(status) {
+        appContainer.classList.add('hidden');
+        errorContainer.classList.remove('hidden');
+        Object.values(errorPages).forEach(page => page.classList.add('hidden'));
+        const pageToShow = errorPages[status] || errorPages[500];
+        pageToShow.classList.remove('hidden');
+    }
+    function showApp() {
+        appContainer.classList.remove('hidden');
+        errorContainer.classList.add('hidden');
+    }
+
+    // ---------- CUSTOM DROPDOWN FACTORY ----------
+    function createCustomDropdown(containerId, options, placeholder, onSelect) {
+        const container = $(containerId);
+        if (!container) return { reset: () => {} }; // Guard clause
+        const selectId = `${containerId}-select`;
+        const optionsId = `${containerId}-options`;
+        let html = `<button id="${selectId}" type="button" class="flex items-center justify-between w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-left focus:outline-none focus:ring-2 focus:ring-blue-400"><span class="text-gray-500">${placeholder}</span><svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg></button><div id="${optionsId}" class="custom-select-options"><div class="custom-select-option" data-value="">${placeholder}</div>${options.map(opt => `<div class="custom-select-option" data-value="${opt}">${opt}</div>`).join('')}</div>`;
+        container.innerHTML = html;
+        const selectBtn = $(selectId), optionsContainer = $(optionsId), optionItems = optionsContainer.querySelectorAll('.custom-select-option');
+        selectBtn.addEventListener('click', (e) => { e.stopPropagation(); optionsContainer.classList.toggle('open'); });
+        optionItems.forEach(item => { item.addEventListener('click', (e) => { e.stopPropagation(); const value = item.getAttribute('data-value'); selectBtn.querySelector('span').textContent = value || placeholder; if(value) { selectBtn.querySelector('span').classList.remove('text-gray-500'); selectBtn.querySelector('span').classList.add('text-gray-900'); } else { selectBtn.querySelector('span').classList.add('text-gray-500'); selectBtn.querySelector('span').classList.remove('text-gray-900'); } optionsContainer.classList.remove('open'); onSelect(value); }); });
+        const resetFunc = (triggerCallback = true) => { selectBtn.querySelector('span').textContent = placeholder; selectBtn.querySelector('span').classList.add('text-gray-500'); selectBtn.querySelector('span').classList.remove('text-gray-900'); if (triggerCallback) { onSelect(''); } };
+        return { reset: resetFunc };
+    }
+
+    // ---------- RENDER FUNCTIONS ----------
+    function skeletonCard() { return `<div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm"><div class="h-5 w-36 rounded skeleton"></div><div class="mt-2 h-4 w-24 rounded skeleton"></div><div class="mt-3 h-3 w-full rounded skeleton"></div><div class="mt-2 h-3 w-3/4 rounded skeleton"></div><div class="mt-4 h-8 w-24 rounded skeleton"></div></div>`; }
+    function applyFiltersAndRender() { const query = (searchInput.value || '').trim().toLowerCase(); filteredRegistrations = allRegistrations.filter(v => { const searchableText = `${v.vehicle?.licensePlate || ''} ${v.vehicle?.driverName || ''} ${v.supplier?.name || ''} ${v.reason || ''} ${v.employee?.name || ''} ${v.employee?.department || ''}`.toLowerCase(); return (!query || searchableText.includes(query)) && (!currentPriorityFilter || v.priority === currentPriorityFilter) && (!currentTypeFilter || v.vehicle?.vehicleType === currentTypeFilter); }); renderLists(); }
+    
+    function renderLists() { 
+        waitingListPanel.innerHTML = ''; 
+        insideListPanel.innerHTML = ''; 
+        let waitingCount = 0, insideCount = 0; 
+        const listToRender = (searchInput.value || currentPriorityFilter || currentTypeFilter) ? filteredRegistrations : allRegistrations; 
+        listToRender.forEach(vehicle => { 
+            const cardHTML = createVehicleCard(vehicle); 
+            if (vehicle.status === 'Đã khai báo') { 
+                waitingListPanel.insertAdjacentHTML('beforeend', cardHTML); 
+                waitingCount++; 
+            } else if (vehicle.status === 'Đã vào cổng') { 
+                insideListPanel.insertAdjacentHTML('beforeend', cardHTML); 
+                insideCount++; 
+            } 
+        }); 
+        if (waitingCount === 0) waitingListPanel.innerHTML = `<div class="text-center text-gray-500 py-10">🕘 Không có xe nào đang chờ.</div>`; 
+        if (insideCount === 0) insideListPanel.innerHTML = `<div class="text-center text-gray-500 py-10">🚧 Không có xe nào trong công ty.</div>`; 
+        $('waitingCount').textContent = waitingCount; 
+        $('insideCount').textContent = insideCount; 
+    }
+
+    function createVehicleCard(vehicle) { const priority = priorityStyles[vehicle.priority] || { border: 'border-slate-300', text: 'text-slate-600', bg: 'bg-slate-100' }; const timeLabel = vehicle.status === 'Đã vào cổng' ? `<p class="text-xs text-gray-500 mt-1">Vào lúc: ${new Date(vehicle.checkInTime).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</p>` : ''; const expectedDateLabel = (vehicle.status === 'Đã khai báo') ? `<p class="text-xs text-gray-500 mt-1">Dự kiến: ${formatExpectedDate(vehicle.expectedDate)}</p>` : ''; const isDeclared = vehicle.status !== 'Chờ khai báo'; return `<div id="card-${vehicle._id}" data-id="${vehicle._id}" class="vehicle-card bg-white p-4 rounded-xl shadow-sm border-l-4 ${priority.border}"><button class="details-btn text-left w-full" data-id="${vehicle._id}"><div class="flex items-center justify-between"><p class="font-bold text-lg text-brand-blue">${formatLicensePlate(vehicle.vehicle?.licensePlate)}</p><span class="text-xs font-semibold px-2 py-0.5 rounded-full ${priority.text} ${priority.bg}">${vehicle.priority}</span></div><p class="text-sm text-gray-800 font-medium">${isDeclared ? (vehicle.vehicle?.driverName || 'N/A') : 'Chưa khai báo'}</p><p class="text-sm text-gray-500 mt-1"><strong>Lý do:</strong> ${vehicle.reason||'-'}</p><p class="text-xs text-gray-400 mt-2">ĐK bởi: ${vehicle.employee?.name||'-'} (${vehicle.employee?.department||'-'})</p></button><div class="flex justify-between items-center mt-3 pt-3 border-t">${(vehicle.status === 'Đã khai báo') ? `<button data-id="${vehicle._id}" class="check-in-btn text-white font-semibold py-2 px-6 rounded-lg shadow-sm bg-green-600 hover:bg-green-700">Check-in</button>${expectedDateLabel}` : ''}${vehicle.status === 'Đã vào cổng' ? `<button data-id="${vehicle._id}" class="checkout-btn text-white font-semibold py-2 px-5 rounded-lg shadow-sm bg-red-600 hover:bg-red-700">Check-out</button>${timeLabel}` : ''}</div></div>`; }
+    function renderHistoryTable(logs) { if (!logs || logs.length === 0) { historyTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-400">Không tìm thấy dữ liệu.</td></tr>`; return; } historyTableBody.innerHTML = logs.map(v => `
+        <tr class="bg-white border-b hover:bg-gray-50">
+            <td class="px-6 py-4 font-medium text-gray-900">${formatLicensePlate(v.vehicle?.licensePlate)}</td>
+            <td class="px-6 py-4">${v.vehicle?.driverName || '-'}</td>
+            <td class="px-6 py-4">${v.employee?.name || '-'}</td>
+            <td class="px-6 py-4">${v.reason || '-'}</td>
+            <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                    ${v.imageUrls?.idCardPhoto ? `<a href="${v.imageUrls.idCardPhoto}" class="img-link"><img src="${v.imageUrls.idCardPhoto}" class="w-10 h-10 object-cover rounded-md" alt="CCCD"/></a>` : ''}
+                    ${v.imageUrls?.licensePlatePhoto ? `<a href="${v.imageUrls.licensePlatePhoto}" class="img-link"><img src="${v.imageUrls.licensePlatePhoto}" class="w-10 h-10 object-cover rounded-md" alt="Biển số"/></a>` : ''}
+                    ${v.imageUrls?.vehiclePhoto ? `<a href="${v.imageUrls.vehiclePhoto}" class="img-link"><img src="${v.imageUrls.vehiclePhoto}" class="w-10 h-10 object-cover rounded-md" alt="Xe"/></a>` : ''}
+                </div>
+            </td>
+            <td class="px-6 py-4">${v.checkInTime ? new Date(v.checkInTime).toLocaleString('vi-VN') : 'N/A'}</td>
+            <td class="px-6 py-4">${v.checkOutTime ? new Date(v.checkOutTime).toLocaleString('vi-VN') : 'N/A'}</td>
+            <td class="px-6 py-4 font-semibold">${formatDuration(v.checkInTime, v.checkOutTime)}</td>
+        </tr>`).join(''); }
+
+    // ---------- MODAL FUNCTIONS ----------
+    function openModal(vehicleId) {
+        const v = allRegistrations.find(x => x._id === vehicleId);
+        if (!v) return;
+        modalContent.innerHTML = `
+            <div class="flex justify-between items-start pb-4 border-b">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Biển số xe: <span class="text-brand-blue">${formatLicensePlate(v.vehicle?.licensePlate)}</span></h3>
+                    <p class="text-md text-gray-600">Tên tài xế: ${v.vehicle?.driverName || 'Chưa khai báo'}</p>
+                </div>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 text-3xl">&times;</button>
+            </div>
+            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 text-sm">
+                <div class="space-y-3">
+                    <h4 class="font-semibold text-gray-700 border-b pb-1">Thông tin tài xế khai</h4>
+                    <p><strong>Loại xe:</strong> ${v.vehicle?.vehicleType||'-'}</p>
+                    <p><strong>Số CCCD:</strong> ${v.vehicle?.driverIdCard||'-'}</p>
+                </div>
+                <div class="space-y-3">
+                    <h4 class="font-semibold text-gray-700 border-b pb-1">Thông tin nhân viên đăng kí</h4>
+                    <p><strong>Nhân viên:</strong> ${v.employee?.name||'-'} (${v.employee?.department||'-'})</p>
+                    <p><strong>Nhà cung cấp:</strong> ${v.supplier?.name||'-'}</p>
+                    <p><strong>Lý do:</strong> ${v.reason||'-'}</p>
+                    <p><strong>Ưu tiên:</strong> ${v.priority||'-'}</p>
+                </div>
+            </div>
+            <div class="mt-6">
+                <h4 class="font-semibold text-gray-700 mb-2">Ảnh xác thực</h4>
+                <div class="grid grid-cols-3 gap-4">
+                    ${(v.imageUrls?.idCardPhoto ? `<a href="${v.imageUrls.idCardPhoto}" class="img-link"><img src="${v.imageUrls.idCardPhoto}" class="w-full h-24 object-cover rounded-lg shadow-md cursor-pointer" alt="Ảnh CCCD"/></a>` : '<div class="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">Không có ảnh CCCD</div>')}
+                    ${(v.imageUrls?.licensePlatePhoto ? `<a href="${v.imageUrls.licensePlatePhoto}" class="img-link"><img src="${v.imageUrls.licensePlatePhoto}" class="w-full h-24 object-cover rounded-lg shadow-md cursor-pointer" alt="Ảnh biển số"/></a>` : '<div class="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">Không có ảnh biển số</div>')}
+                    ${(v.imageUrls?.vehiclePhoto ? `<a href="${v.imageUrls.vehiclePhoto}" class="img-link"><img src="${v.imageUrls.vehiclePhoto}" class="w-full h-24 object-cover rounded-lg shadow-md cursor-pointer" alt="Ảnh xe"/></a>` : '<div class="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400">Không có ảnh xe</div>')}
+                </div>
+            </div>`;
+        $('closeModalBtn').onclick = () => modal.classList.add('hidden');
+        modal.classList.remove('hidden');
+    }
+
+    function openImagePreview(url) { previewImage.src = url; imagePreviewModal.classList.remove('hidden'); }
+    let confirmCallback = null;
+    function showConfirm(message, onConfirm) { confirmMessage.textContent = message; confirmCallback = onConfirm; confirmModal.classList.remove('hidden'); }
+    function hideConfirm() { confirmModal.classList.add('hidden'); confirmCallback = null; }
+
+    // ---------- API & WEBSOCKET ----------
+    const debouncedFetchHistory = debounce(() => fetchAndRenderHistory());
+    async function fetchData({showSkeleton=true} = {}) {
+        if (!AUTH_TOKEN) {
+            showErrorPage(401);
+            return;
+        }
+        if (showSkeleton) { waitingListPanel.innerHTML = skeletonCard().repeat(3); insideListPanel.innerHTML = skeletonCard().repeat(3); } 
+        try { 
+            const response = await fetch(`${API_BASE}/registrations`, {
+                headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+            }); 
+            if (!response.ok) {
+                const err = new Error(`Lỗi HTTP: ${response.status}`);
+                err.status = response.status;
+                throw err;
+            }
+            allRegistrations = await response.json(); 
+            applyFiltersAndRender(); 
+        } catch (err) { 
+            console.error("Lỗi khi tải dữ liệu trực tiếp:", err); 
+            showErrorPage(err.status || 503);
+        } 
+    }
+    
+    async function fetchAndRenderHistory() {
+        if (!AUTH_TOKEN) {
+            showErrorPage(401);
+            return;
+        }
+        let start, end;
+        const today = new Date();
+        
+        switch (activeDateFilter) {
+            case 'this_week':
+                start = new Date(today.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)));
+                end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                break;
+            case 'this_month':
+                start = new Date(today.getFullYear(), today.getMonth(), 1);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                break;
+            case 'today':
+            default:
+                start = new Date();
+                end = new Date();
+                break;
+        }
+
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+
+        const q = historySearch.value;
+        historyTableBody.innerHTML = `<tr><td colspan="8" class="text-center p-8 text-gray-400">Đang tải dữ liệu...</td></tr>`;
+        try {
+            const params = new URLSearchParams({ 
+                start: start.toISOString().split('T')[0], 
+                end: end.toISOString().split('T')[0], 
+                q, 
+                priority: currentHistoryPriority, 
+            });
+            const response = await fetch(`${API_BASE}/registrations/history?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+            });
+            if (!response.ok) {
+                const err = new Error(`Lỗi HTTP: ${response.status}`);
+                err.status = response.status;
+                throw err;
+            }
+            historyLogs = await response.json();
+            renderHistoryTable(historyLogs);
+        } catch (e) {
+            console.error("Lỗi khi tải lịch sử:", e);
+            showErrorPage(e.status || 503);
+        }
+    }
+
+    async function handleAction(vehicleId, action) { 
+        const endpoint = action === 'check-in' ? 'checkin' : 'checkout'; 
+        const cardEl = $(`card-${vehicleId}`); 
+        if (cardEl) cardEl.classList.add('removing'); 
+        try { 
+            const resp = await fetch(`${API_BASE}/registrations/${vehicleId}/${endpoint}`, { 
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+            }); 
+            if (!resp.ok) throw new Error('Hành động thất bại'); 
+            setTimeout(() => { showToast(action === 'check-in' ? 'Đã Check-in' : 'Đã Check-out'); fetchData({showSkeleton: false}); }, 250); 
+        } catch (e) { 
+            showToast('Thao tác thất bại', false); 
+            if (cardEl) cardEl.classList.remove('removing'); 
+        } 
+    }
+    function connectWebSocket() { 
+        if (!AUTH_TOKEN) {
+            console.warn("Không có token xác thực, không thể kết nối WebSocket.");
+            return;
+        }
+        try { 
+            ws = new WebSocket(WS_URL); 
+        } catch (e) { 
+            console.error("Lỗi khởi tạo WebSocket. URL không hợp lệ:", e); 
+            return; 
+        } 
+        ws.onopen = () => { console.log("WebSocket đã kết nối."); fetchData({showSkeleton:false}); }; 
+        ws.onmessage = (e) => { try { const msg = JSON.parse(e.data); if (msg.type === 'update') fetchData({showSkeleton:false}); } catch(_) {} }; 
+        ws.onclose = () => { console.log("WebSocket đã đóng. Đang thử kết nối lại sau 3 giây..."); setTimeout(connectWebSocket, 3000); }; 
+        ws.onerror = (err) => { console.error("Lỗi kết nối WebSocket:", err); ws.close(); }; 
+    }
+
+    // ---------- EVENTS ----------
+    document.body.addEventListener('click', (e) => {
+      const checkInBtn = e.target.closest('.check-in-btn');
+      const checkoutBtn = e.target.closest('.checkout-btn');
+      const detailsBtn = e.target.closest('.details-btn');
+      const imgLink = e.target.closest('.img-link');
+      if (detailsBtn) openModal(detailsBtn.dataset.id);
+      else if (checkInBtn) handleAction(checkInBtn.dataset.id, 'check-in');
+      else if (checkoutBtn) { showConfirm('Xác nhận cho xe này RỜI CỔNG?', () => { handleAction(checkoutBtn.dataset.id, 'check-out'); }); }
+      else if (imgLink) { e.preventDefault(); openImagePreview(imgLink.href); }
+      else if (e.target === modal || e.target === imagePreviewModal || e.target === confirmModal) { modal.classList.add('hidden'); imagePreviewModal.classList.add('hidden'); hideConfirm(); }
+      if (!e.target.closest('.custom-select-container')) { document.querySelectorAll('.custom-select-options.open').forEach(el => el.classList.remove('open')); }
+    });
+    liveTab.addEventListener('click', () => { liveView.classList.remove('hidden'); historyView.classList.add('hidden'); liveTab.classList.add('active'); historyTab.classList.remove('active'); });
+    historyTab.addEventListener('click', () => { historyView.classList.remove('hidden'); liveView.classList.add('hidden'); historyTab.classList.add('active'); liveTab.classList.remove('active'); fetchAndRenderHistory(); });
+    searchInput.addEventListener('input', debounce(applyFiltersAndRender, 300));
+    closePreviewBtn.addEventListener('click', () => imagePreviewModal.classList.add('hidden'));
+    confirmOkBtn.addEventListener('click', () => { if (confirmCallback) { confirmCallback(); } hideConfirm(); });
+    confirmCancelBtn.addEventListener('click', hideConfirm);
+    retryBtn.addEventListener('click', () => {
+        showApp();
+        fetchData();
+    });
+    
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('td_auth_token');
+            window.location.href = '../user-login.html';
+        });
+    }
+
+    // ---------- INIT ----------
+    const priorityDropdown = createCustomDropdown('priorityFilterContainer', ['Thấp', 'Trung bình', 'Cao'], 'Ưu tiên (tất cả)', (value) => { currentPriorityFilter = value; applyFiltersAndRender(); });
+    const typeDropdown = createCustomDropdown('typeFilterContainer', ['Xe tải', 'Container', 'Xe khách', 'Khác'], 'Loại xe (tất cả)', (value) => { currentTypeFilter = value; applyFiltersAndRender(); });
+    clearFilters.addEventListener('click', () => { searchInput.value = ''; priorityDropdown.reset(); typeDropdown.reset(); });
+    
+    const historyPriorityDropdown = createCustomDropdown('historyPriorityFilterContainer', ['Thấp', 'Trung bình', 'Cao'], 'Ưu tiên (tất cả)', (value) => { currentHistoryPriority = value; debouncedFetchHistory(); });
+    historySearch.addEventListener('input', debouncedFetchHistory);
+
+    function updateActiveDateFilter(newFilter) {
+        Object.values(dateFilterButtons).forEach(btn => btn.classList.remove('active'));
+        dateFilterButtons[newFilter].classList.add('active');
+        activeDateFilter = newFilter;
+        fetchAndRenderHistory();
+    }
+
+    dateFilterButtons.today.addEventListener('click', () => updateActiveDateFilter('today'));
+    dateFilterButtons.this_week.addEventListener('click', () => updateActiveDateFilter('this_week'));
+    dateFilterButtons.this_month.addEventListener('click', () => updateActiveDateFilter('this_month'));
+    
+    clearHistoryFilters.addEventListener('click', () => { 
+        historySearch.value = ''; 
+        currentHistoryPriority = ''; 
+        historyPriorityDropdown.reset(false); 
+        updateActiveDateFilter('today');
+    });
+
+    if (AUTH_TOKEN) {
+        showApp();
+        fetchData();
+        connectWebSocket();
+    } else {
+        // For testing without login
+        showApp();
+        fetchData();
+        connectWebSocket();
+    }
+  });
+  </script>
+</body>
+</html>

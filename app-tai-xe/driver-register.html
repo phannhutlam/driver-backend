@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Khai Báo Thông Tin Xe - Thái Dương</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+  <style>
+    :root {
+      --brand-blue: #1e3a8a;
+      --brand-main: #214091;
+      --brand-main-dark: #1b3373;
+    }
+    html, body { font-family: 'Be Vietnam Pro', system-ui, sans-serif; }
+    .text-brand-blue { color: var(--brand-blue); }
+    .bg-brand-main { background-color: var(--brand-main); }
+    .hover\:bg-brand-main-dark:hover { background-color: var(--brand-main-dark); }
+    .text-brand-main { color: var(--brand-main); }
+    .focus\:ring-brand-main:focus { --tw-ring-color: var(--brand-main); }
+    .focus\:border-brand-main:focus { border-color: var(--brand-main); }
+    .input-error { border-color: #ef4444; }
+    .error-message { color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; min-height: 1.25rem; }
+    .file-input-preview {
+        width: 100px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        flex-shrink: 0;
+    }
+    .sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+    }
+    .dragover {
+        background-color: #f0f9ff;
+        border-color: var(--brand-main);
+    }
+    .file-input-wrapper {
+        position: relative;
+        border: 2px dashed #d1d5db;
+        border-radius: 0.375rem;
+        padding: 1.25rem;
+        transition: all 0.2s ease-in-out;
+    }
+    .file-input-wrapper.has-file {
+        border-style: solid;
+        border-color: #16a34a;
+        padding: 1rem;
+    }
+    .file-input-prompt { text-align: center; }
+    .file-input-details { display: none; align-items: center; justify-content: space-between; width: 100%; }
+    .has-file .file-input-prompt { display: none; }
+    .has-file .file-input-details { display: flex; }
+    .remove-file-btn {
+        background-color: #fee2e2; color: #b91c1c; font-size: 0.75rem;
+        padding: 0.25rem 0.5rem; border-radius: 9999px; font-weight: 500;
+        cursor: pointer; transition: background-color 0.2s;
+    }
+    .remove-file-btn:hover { background-color: #fecaca; }
+  </style>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+
+  <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 md:p-10">
+    <div id="driverFormSection">
+      <div class="text-center mb-6">
+        <img src="images/logo.png" alt="Logo Công ty Thái Dương" class="mx-auto h-16 w-auto mb-4">
+        <h1 class="text-2xl font-bold text-brand-blue mt-4">Khai Báo Thông Tin</h1>
+        <p class="text-gray-500 mt-1">Vui lòng điền đầy đủ thông tin bên dưới.</p>
+      </div>
+      
+      <div id="registrationInfo" class="mb-6 border-l-4 border-blue-200 bg-blue-50 p-4 rounded-r-lg hidden">
+          <h3 class="font-semibold text-brand-blue mb-2">Thông tin lượt vào đã đăng ký:</h3>
+          <div class="text-sm text-gray-700 space-y-1">
+              <p><span class="font-medium">Ngày dự kiến:</span> <span id="infoDate">—</span></p>
+              <p><span class="font-medium">Nhân viên:</span> <span id="infoEmp">—</span></p>
+              <p><span class="font-medium">Phòng ban:</span> <span id="infoDept">—</span></p>
+              <p><span class="font-medium">Nhà cung cấp:</span> <span id="infoSupplier">—</span></p>
+              <p><span class="font-medium">Lý do:</span> <span id="infoReason">—</span></p>
+          </div>
+      </div>
+
+      <div id="formError" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg mb-4">
+          <p class="font-bold">Đã có lỗi xảy ra</p>
+          <p id="formErrorMessage">Nội dung lỗi sẽ được hiển thị ở đây.</p>
+      </div>
+
+      <form id="driverForm" class="space-y-4" novalidate>
+        <div>
+          <label for="driverName" class="block text-sm font-medium text-gray-700 mb-1">Họ và tên tài xế</label>
+          <input type="text" id="driverName" name="driverName" required maxlength="50" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150" placeholder="VD: Trần Văn B">
+          <div id="driverNameError" class="error-message"></div>
+        </div>
+        <div>
+          <label for="driverIdCard" class="block text-sm font-medium text-gray-700 mb-1">Số CCCD (12 số)</label>
+          <input type="text" id="driverIdCard" name="driverIdCard" required maxlength="12" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150" placeholder="Nhập 12 số Căn cước công dân">
+          <div id="driverIdCardError" class="error-message"></div>
+        </div>
+        <div>
+          <label for="licensePlate" class="block text-sm font-medium text-gray-700 mb-1">Biển số xe</label>
+          <input type="text" id="licensePlate" name="licensePlate" required maxlength="15" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150" placeholder="VD: 51C-123.45">
+          <div id="licensePlateError" class="error-message"></div>
+        </div>
+        <div>
+          <label for="vehicleType" class="block text-sm font-medium text-gray-700 mb-1">Loại xe</label>
+          <input type="text" id="vehicleType" name="vehicleType" required maxlength="50" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150" placeholder="VD: Xe tải 1.5 tấn">
+          <div id="vehicleTypeError" class="error-message"></div>
+        </div>
+
+        <div class="pt-4 border-t">
+            <h3 class="text-base font-semibold text-gray-800 mb-2">Hình ảnh xác thực <span class="text-red-500">*</span></h3>
+            <p class="text-sm text-gray-500 mb-4">Vui lòng tải lên đủ 3 ảnh để hoàn tất.</p>
+            <div id="fileUploadError" class="error-message font-medium mb-4"></div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">1. Ảnh Căn cước Công dân</label>
+                    <div class="file-input-wrapper cursor-pointer" id="idCardPhoto-wrapper">
+                        <div class="file-input-prompt">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <div class="flex justify-center text-sm text-gray-600 mt-2">
+                                <span>Nhấn để tải lên hoặc kéo và thả</span>
+                                <input id="idCardPhoto" name="idCardPhoto" type="file" class="sr-only" accept="image/*" capture="environment" required>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF</p>
+                        </div>
+                        <div class="file-input-details">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <img id="idCardPhoto-preview" class="file-input-preview" alt="Xem trước CCCD"/>
+                                <span id="idCardPhoto-filename" class="text-sm text-gray-700 font-medium block truncate"></span>
+                            </div>
+                            <span class="remove-file-btn" data-input-id="idCardPhoto">Xóa</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">2. Ảnh Biển số xe</label>
+                    <div class="file-input-wrapper cursor-pointer" id="licensePlatePhoto-wrapper">
+                         <div class="file-input-prompt">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <div class="flex justify-center text-sm text-gray-600 mt-2">
+                                <span>Nhấn để tải lên hoặc kéo và thả</span>
+                                <input id="licensePlatePhoto" name="licensePlatePhoto" type="file" class="sr-only" accept="image/*" capture="environment" required>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF</p>
+                        </div>
+                        <div class="file-input-details">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <img id="licensePlatePhoto-preview" class="file-input-preview" alt="Xem trước Biển số"/>
+                                <span id="licensePlatePhoto-filename" class="text-sm text-gray-700 font-medium block truncate"></span>
+                            </div>
+                            <span class="remove-file-btn" data-input-id="licensePlatePhoto">Xóa</span>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">3. Ảnh Toàn cảnh xe</label>
+                    <div class="file-input-wrapper cursor-pointer" id="vehiclePhoto-wrapper">
+                        <div class="file-input-prompt">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            <div class="flex justify-center text-sm text-gray-600 mt-2">
+                                <span>Nhấn để tải lên hoặc kéo và thả</span>
+                                <input id="vehiclePhoto" name="vehiclePhoto" type="file" class="sr-only" accept="image/*" capture="environment" required>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF</p>
+                        </div>
+                        <div class="file-input-details">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <img id="vehiclePhoto-preview" class="file-input-preview" alt="Xem trước Toàn cảnh xe"/>
+                                <span id="vehiclePhoto-filename" class="text-sm text-gray-700 font-medium block truncate"></span>
+                            </div>
+                            <span class="remove-file-btn" data-input-id="vehiclePhoto">Xóa</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" id="submitButton" class="w-full bg-brand-main text-white font-semibold py-3 px-4 rounded-lg hover:bg-brand-main-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-main transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 !mt-8 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2">
+          <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white hidden" id="loadingSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <span id="buttonText">Hoàn tất & Gửi thông tin</span>
+        </button>
+      </form>
+    </div>
+
+    <div id="successSection" class="hidden text-center py-8">
+      <svg class="mx-auto h-20 w-20 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      <h1 class="text-2xl font-bold text-gray-800 mt-5">Gửi thành công!</h1>
+      <p class="text-gray-600 mt-2 max-w-xs mx-auto">Thông tin của bạn đã được ghi nhận. Vui lòng xuất trình giấy tờ cho bảo vệ tại cổng.</p>
+      <p class="text-sm text-gray-500 mt-6">Cảm ơn bạn đã hợp tác!</p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const driverForm = document.getElementById('driverForm');
+      const submitButton = document.getElementById('submitButton');
+      const loadingSpinner = document.getElementById('loadingSpinner');
+      const buttonText = document.getElementById('buttonText');
+      const formError = document.getElementById('formError');
+      const formErrorMessage = document.getElementById('formErrorMessage');
+      const formSection = document.getElementById('driverFormSection');
+      const compressedFiles = {};
+      const textFields = {
+        driverName: { input: document.getElementById('driverName'), error: document.getElementById('driverNameError'), regex: /^[\p{L}\s'.-]+$/u, errorMessage: 'Tên không hợp lệ.' },
+        driverIdCard: { input: document.getElementById('driverIdCard'), error: document.getElementById('driverIdCardError'), regex: /^\d{12}$/, errorMessage: 'Số CCCD phải có đúng 12 chữ số.' },
+        licensePlate: { input: document.getElementById('licensePlate'), error: document.getElementById('licensePlateError'), regex: /^\d{2}[A-Z]{1,2}[-.\s]?\d{3,5}$/i, errorMessage: 'Biển số xe không hợp lệ. VD: 51C-123.45' },
+        vehicleType: { input: document.getElementById('vehicleType'), error: document.getElementById('vehicleTypeError'), regex: /.+/, errorMessage: 'Vui lòng nhập loại xe.' }
+      };
+      const fileInputKeys = ['idCardPhoto', 'licensePlatePhoto', 'vehiclePhoto'];
+      const fileUploadError = document.getElementById('fileUploadError');
+      
+      const params = new URLSearchParams(window.location.search);
+      const registrationId = params.get('id');
+
+      if (!registrationId) {
+          formSection.innerHTML = '<p class="text-center text-red-500 font-bold">Lỗi: Không tìm thấy ID đăng ký trong đường dẫn.</p>';
+          return;
+      }
+
+      try {
+          const response = await fetch(`http://localhost:3000/api/requests/${registrationId}`);
+          if (!response.ok) {
+              const err = await response.json();
+              throw new Error(err.message || 'Không tìm thấy yêu cầu hoặc yêu cầu không hợp lệ.');
+          }
+          const internalInfo = await response.json();
+          
+          const infoBox = document.getElementById('registrationInfo');
+          const formatDate = (dateString) => {
+              if (!dateString) return '—';
+              const date = new Date(dateString);
+              if (isNaN(date.getTime())) {
+                console.error("Invalid date value:", dateString);
+                return '—';
+              }
+              return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+          };
+          document.getElementById('infoDate').textContent = formatDate(internalInfo.expectedDate);
+          document.getElementById('infoEmp').textContent = internalInfo.employeeName || '—';
+          document.getElementById('infoDept').textContent = internalInfo.department || '—';
+          document.getElementById('infoSupplier').textContent = internalInfo.supplierName || '—';
+          document.getElementById('infoReason').textContent = internalInfo.reason || '—';
+          infoBox.classList.remove('hidden');
+
+      } catch (error) {
+          formSection.innerHTML = `<p class="text-center text-red-500 font-bold">Lỗi: ${error.message}</p>`;
+          return;
+      }
+      
+      // SỬA LỖI: Khôi phục lại toàn bộ logic JavaScript bị thiếu
+      function validateTextField(fieldName, showError = true) {
+        const field = textFields[fieldName];
+        const value = field.input.value.trim();
+        let isValid = true;
+        if (value === '') {
+          if (showError) {
+            field.input.classList.add('input-error');
+            field.error.textContent = 'Trường này không được để trống.';
+          }
+          isValid = false;
+        } else if (field.regex && !field.regex.test(value)) {
+          if (showError) {
+            field.input.classList.add('input-error');
+            field.error.textContent = field.errorMessage;
+          }
+          isValid = false;
+        } else {
+          field.input.classList.remove('input-error');
+          field.error.textContent = '';
+        }
+        return isValid;
+      }
+
+      function checkFormValidity() {
+        let isFormValid = true;
+        for (const fieldName in textFields) {
+          if (!validateTextField(fieldName, false)) isFormValid = false;
+        }
+        if (Object.keys(compressedFiles).length !== 3) {
+          isFormValid = false;
+        }
+        submitButton.disabled = !isFormValid;
+      }
+
+      async function handleFileSelect(event) {
+          const input = event.target;
+          const key = input.id;
+          const file = input.files[0];
+          if (!file) return;
+
+          const wrapper = document.getElementById(`${key}-wrapper`);
+          const filenameDisplay = document.getElementById(`${key}-filename`);
+          const preview = document.getElementById(`${key}-preview`);
+          
+          wrapper.classList.add('has-file');
+          filenameDisplay.textContent = file.name;
+
+          const reader = new FileReader();
+          reader.onload = e => { preview.src = e.target.result; };
+          reader.readAsDataURL(file);
+
+          const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' };
+          try {
+              const compressedFile = await imageCompression(file, options);
+              compressedFiles[key] = new File([compressedFile], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+          } catch (error) {
+              console.error('Lỗi nén ảnh:', error);
+              compressedFiles[key] = file;
+          }
+          checkFormValidity();
+      }
+      
+      for (const fieldName in textFields) {
+        textFields[fieldName].input.addEventListener('input', () => {
+          validateTextField(fieldName, true);
+          checkFormValidity();
+        });
+      }
+
+      fileInputKeys.forEach(key => {
+          const input = document.getElementById(key);
+          const wrapper = document.getElementById(`${key}-wrapper`);
+          input.addEventListener('change', handleFileSelect);
+          wrapper.addEventListener('dragover', (e) => { e.preventDefault(); wrapper.classList.add('dragover'); });
+          wrapper.addEventListener('dragleave', () => wrapper.classList.remove('dragover'));
+          wrapper.addEventListener('drop', (e) => {
+              e.preventDefault();
+              wrapper.classList.remove('dragover');
+              input.files = e.dataTransfer.files;
+              input.dispatchEvent(new Event('change'));
+          });
+          const removeBtn = wrapper.querySelector('.remove-file-btn');
+          removeBtn.addEventListener('click', (e) => {
+              e.stopPropagation(); 
+              input.value = '';
+              delete compressedFiles[key];
+              wrapper.classList.remove('has-file');
+              document.getElementById(`${key}-filename`).textContent = '';
+              document.getElementById(`${key}-preview`).src = '';
+              checkFormValidity();
+          });
+          wrapper.addEventListener('click', () => {
+              input.click();
+          });
+      });
+
+      driverForm.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        
+        let isAllTextValid = true;
+        for (const fieldName in textFields) {
+          if (!validateTextField(fieldName, true)) isAllTextValid = false;
+        }
+        
+        let areAllFilesIn = true;
+        if (Object.keys(compressedFiles).length !== 3) {
+          areAllFilesIn = false;
+          fileUploadError.textContent = 'Vui lòng tải lên đủ 3 hình ảnh.';
+        } else {
+          fileUploadError.textContent = '';
+        }
+
+        if (!isAllTextValid || !areAllFilesIn) return;
+        
+        submitButton.disabled = true;
+        loadingSpinner.classList.remove('hidden');
+        buttonText.textContent = 'Đang xử lý...';
+        formError.classList.add('hidden');
+
+        const formData = new FormData();
+        for(const fieldName in textFields) { formData.append(fieldName, textFields[fieldName].input.value); }
+        for (const key in compressedFiles) { formData.append(key, compressedFiles[key]); }
+        
+        try {
+            const response = await fetch(`http://localhost:3000/api/declarations/${registrationId}`, {
+                method: 'PUT',
+                body: formData
+            });
+
+            if (response.ok) {
+                formSection.classList.add('hidden');
+                document.getElementById('successSection').classList.remove('hidden');
+            } else {
+                const errorData = await response.json();
+                formErrorMessage.textContent = errorData.message || 'Lỗi không xác định.';
+                formError.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            formErrorMessage.textContent = 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại đường truyền mạng.';
+            formError.classList.remove('hidden');
+        } finally {
+            submitButton.disabled = false;
+            loadingSpinner.classList.add('hidden');
+            buttonText.textContent = 'Hoàn tất & Gửi thông tin';
+        }
+      });
+      
+      checkFormValidity();
+    });
+  </script>
+</body>
+</html>

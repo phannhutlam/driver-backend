@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Hệ Thống Quản Lý Xe Thái Dương</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2kTvBf1w9tF8gGvF1l/J4U9v5C0yBv3L4+B6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .login-bg {
+            background-image: url('.///images/Cover.png');
+            background-size: cover;
+            background-position: center;
+        }
+        .form-container {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="login-bg">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-md">
+            <div class="bg-white/80 form-container rounded-2xl shadow-xl p-8">
+                <div class="text-center mb-8">
+                    <!-- Logo Công ty -->
+                    <img src="images/logo.png" alt="Logo Công ty Thái Dương" class="mx-auto h-20 w-auto mb-4">
+                    <h1 class="text-3xl font-bold text-gray-800">CMS Quản lý xe ra vào</h1>
+                    <p class="text-gray-500 text-sm mt-2">Đăng nhập để tiếp tục vào hệ thống</p>
+                </div>
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
+                        <div class="mt-1 relative">
+                             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i class="fa-solid fa-user text-gray-400"></i>
+                            </span>
+                            <input type="text" id="username" name="username" autocomplete="username" required class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">Mật khẩu</label>
+                        <div class="mt-1 relative">
+                             <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                                <i class="fa-solid fa-lock text-gray-400"></i>
+                            </span>
+                            <input type="password" id="password" name="password" autocomplete="current-password" required class="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition">
+                            <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
+                                <i class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p id="errorMessage" class="text-red-500 text-sm text-center h-5"></p>
+                    <button type="submit" id="loginBtn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 transition-transform transform hover:scale-105">
+                        Đăng nhập
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_BASE = '/api';
+            const form = document.getElementById('loginForm');
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const passwordInput = document.getElementById('password');
+            const togglePasswordBtn = document.getElementById('togglePassword');
+            const usernameInput = document.getElementById('username');
+            
+            // Toggle password visibility
+            togglePasswordBtn.addEventListener('click', () => {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                togglePasswordBtn.querySelector('i').classList.toggle('fa-eye-slash');
+                togglePasswordBtn.querySelector('i').classList.toggle('fa-eye');
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Đang đăng nhập...';
+                errorMessage.textContent = '';
+
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                try {
+                    const response = await fetch(`${API_BASE}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        localStorage.setItem('td_auth_token', result.token);
+                        
+                        // Chuyển hướng dựa trên vai trò của người dùng
+                        if (result.role === 'admin') {
+                            window.location.href = './cms.html';
+                        } else if (result.role === 'staff') {
+                            window.location.href = './app-bao-ve/security-approved.html';
+                        }
+                    } else {
+                        errorMessage.textContent = result.message || 'Đã xảy ra lỗi.';
+                    }
+                } catch (error) {
+                    errorMessage.textContent = 'Không thể kết nối tới server. Vui lòng thử lại sau.';
+                    console.error('Lỗi đăng nhập:', error);
+                } finally {
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Đăng nhập';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

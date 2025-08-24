@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng Ký Xe Ra/Vào - Thái Dương</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+      :root {
+        --brand-blue: #1e3a8a;
+        --brand-main: #214091;
+        --brand-main-dark: #1b3373; 
+      }
+      html, body { font-family: 'Be Vietnam Pro', sans-serif; }
+      .bg-brand-blue { background-color: var(--brand-blue); }
+      .text-brand-blue { color: var(--brand-blue); }
+      .bg-brand-main { background-color: var(--brand-main); }
+      .hover\:bg-brand-main-dark:hover { background-color: var(--brand-main-dark); }
+      .focus\:ring-brand-main:focus { --tw-ring-color: var(--brand-main); }
+      .focus\:border-brand-main:focus { border-color: var(--brand-main); }
+      .input-error { border-color: #ef4444; }
+      .error-message { color: #ef4444; font-size: 0.875rem; margin-top: 0.25rem; min-height: 1.25rem; }
+    </style>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-6 md:p-8">
+      <div class="text-center mb-8">
+        <img src="images/logo.png" alt="Logo Công ty Thái Dương" class="mx-auto h-16 w-auto mb-4" onerror="this.style.display='none'; this.onerror=null;">
+        <h1 class="text-2xl font-bold text-brand-blue mt-4">Đăng Ký Xe Ra/Vào (Nội bộ)</h1>
+        <p class="text-gray-500 mt-1">Nhập thông tin để tạo link đăng ký cho tài xế.</p>
+      </div>
+
+      <div id="pageError" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg mb-4">
+          <p class="font-bold">Đã có lỗi xảy ra</p>
+          <p id="pageErrorMessage"></p>
+      </div>
+
+      <form id="registrationForm" class="space-y-5" novalidate>
+        <div>
+          <label for="employeeName" class="block text-sm font-medium text-gray-700 mb-1">Tên nhân viên đăng ký</label>
+          <input type="text" id="employeeName" name="employeeName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150" placeholder="VD: Nguyễn Văn A">
+          <p class="error-message"></p>
+        </div>
+        
+        <div>
+          <label for="employeeDepartment" class="block text-sm font-medium text-gray-700 mb-1">Phòng ban</label>
+          <select id="employeeDepartment" name="employeeDepartment" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150 bg-white">
+            <option value="" disabled selected>-- Chọn phòng ban --</option>
+            <option value="IT">IT</option>
+            <option value="Sales">Sales</option>
+            <option value="Nhân sự">Nhân sự</option>
+            <option value="Kế hoạch">Kế hoạch</option>
+          </select>
+          <p class="error-message"></p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Thời gian dự kiến xe vào</label>
+          <div class="flex items-center space-x-3">
+            <button type="button" id="todayBtn" class="w-full py-2 px-4 rounded-lg transition duration-200">Hôm nay</button>
+            <button type="button" id="tomorrowBtn" class="w-full py-2 px-4 rounded-lg transition duration-200">Ngày mai</button>
+          </div>
+          <p id="selectedDateDisplay" class="text-sm text-gray-600 mt-2 text-center h-5">Ngày chọn là: —</p>
+          <input type="hidden" id="expectedDate" name="expectedDate" required>
+        </div>
+        
+        <div class="pt-5 mt-5 border-t border-gray-200">
+          <p class="text-sm font-bold text-gray-800 mb-4">Thông tin nhà cung cấp & lý do</p>
+          <div class="space-y-5">
+            <div>
+              <label for="supplierName" class="block text-sm font-medium text-gray-700 mb-1">Tên Nhà Cung Cấp</label>
+              <input type="text" id="supplierName" name="supplierName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150" placeholder="VD: Công ty Vận tải ABC">
+              <p class="error-message"></p>
+            </div>
+
+            <div>
+              <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">Lý do vào cổng</label>
+              <input type="text" id="reason" name="reason" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150" placeholder="VD: Giao lô hàng H0123">
+              <p class="error-message"></p>
+            </div>
+             <div>
+              <label for="priority" class="flex items-center text-sm font-medium text-gray-700 mb-1">
+                <span id="priorityIndicator" class="w-3 h-3 rounded-full bg-gray-300 mr-2 transition-colors"></span>
+                Mức độ ưu tiên
+              </label>
+              <select id="priority" name="priority" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-brand-main focus:border-brand-main transition duration-150 bg-white">
+                <option value="" disabled selected>-- Chọn mức độ --</option>
+                <option value="Thấp">Thấp</option>
+                <option value="Trung bình">Trung bình</option>
+                <option value="Cao">Cao</option>
+              </select>
+              <p class="error-message"></p>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="submitButton" class="w-full bg-brand-main text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-brand-main-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-main transition duration-200 ease-in-out transform hover:-translate-y-0.5 !mt-8 disabled:bg-gray-400 disabled:cursor-not-allowed">
+          Tạo Link & Mã QR
+        </button>
+      </form>
+    </div>
+
+    <!-- Modal Popup -->
+    <div id="modalBackdrop" class="fixed inset-0 bg-black/60 hidden items-end sm:items-center justify-center z-50 transition-opacity duration-300">
+      <div id="modalPanel" class="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl p-6 sm:p-7 transform transition-transform duration-300 translate-y-full sm:translate-y-0 sm:scale-95">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-brand-blue flex items-center gap-2">
+              <svg class="w-6 h-6 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20Zm5.3-13.3-6.01 6.01-2.59-2.6a1 1 0 1 0-1.41 1.42l3.3 3.29a1 1 0 0 0 1.41 0l6.72-6.72a1 1 0 1 0-1.42-1.41Z"/></svg>
+              Tạo yêu cầu thành công
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">Gửi link hoặc quét mã QR bên dưới cho tài xế.</p>
+          </div>
+          <button id="closeModal" class="ml-4 -mr-2 text-gray-500 hover:text-gray-700" aria-label="Đóng">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <div class="mt-5 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Link đăng ký</label>
+            <div class="relative">
+              <input id="modalLink" type="text" readonly class="w-full bg-gray-100 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 pr-24" />
+              <div class="absolute inset-y-0 right-0 flex gap-1 pr-2">
+                <button id="btnCopy" class="my-1 px-3 rounded-lg text-sm bg-gray-200 hover:bg-gray-300 flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  Copy
+                </button>
+                <a id="btnOpen" target="_blank" class="my-1 px-3 rounded-lg text-sm bg-brand-main text-white hover:bg-brand-main-dark flex items-center gap-1.5">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                  Mở
+                </a>
+              </div>
+            </div>
+            <p id="copyMsg" class="text-xs text-green-600 mt-1 h-4"></p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="border rounded-lg p-3 flex flex-col items-center">
+              <div id="qrContainer" class="p-2 bg-white"></div>
+              <button id="btnDownloadQR" class="mt-2 w-full text-sm bg-gray-200 hover:bg-gray-300 rounded-lg py-2">Tải QR PNG</button>
+            </div>
+            <div class="text-sm text-gray-700 space-y-1">
+              <p><span class="font-medium">Ngày dự kiến:</span> <span id="infoDate">—</span></p>
+              <p><span class="font-medium">Nhân viên:</span> <span id="infoEmp">—</span></p>
+              <p><span class="font-medium">Phòng ban:</span> <span id="infoDept">—</span></p>
+              <p><span class="font-medium">Nhà cung cấp:</span> <span id="infoSupplier">—</span></p>
+              <p><span class="font-medium">Lý do:</span> <span id="infoReason">—</span></p>
+              <p><span class="font-medium">Ưu tiên:</span> <span id="infoPriority">—</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+          <button id="btnNew" class="w-full sm:w-auto bg-brand-main text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-brand-main-dark">Tạo yêu cầu mới</button>
+          <button id="btnClose" class="w-full sm:w-auto bg-gray-200 text-gray-800 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-300">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const API_BASE = '/api';
+        
+        const form = document.getElementById('registrationForm');
+        const submitButton = document.getElementById('submitButton');
+        const todayBtn = document.getElementById('todayBtn');
+        const tomorrowBtn = document.getElementById('tomorrowBtn');
+        const selectedDateDisplay = document.getElementById('selectedDateDisplay');
+        const expectedDateInput = document.getElementById('expectedDate');
+        const employeeNameInput = document.getElementById('employeeName');
+        const employeeDepartmentInput = document.getElementById('employeeDepartment');
+        const supplierNameInput = document.getElementById('supplierName');
+        
+        const reasonInput = document.getElementById('reason');
+        const prioritySelect = document.getElementById('priority');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalPanel = document.getElementById('modalPanel');
+        const closeModalBtn = document.getElementById('closeModal');
+        const btnClose = document.getElementById('btnClose');
+        const btnNew = document.getElementById('btnNew');
+        const modalLink = document.getElementById('modalLink');
+        const btnCopy = document.getElementById('btnCopy');
+        const btnOpen = document.getElementById('btnOpen');
+        const copyMsg = document.getElementById('copyMsg');
+        const qrContainer = document.getElementById('qrContainer');
+        const btnDownloadQR = document.getElementById('btnDownloadQR');
+        const priorityIndicator = document.getElementById('priorityIndicator');
+        const pageError = document.getElementById('pageError');
+        const pageErrorMessage = document.getElementById('pageErrorMessage');
+
+        const fields = ['employeeName', 'employeeDepartment', 'supplierName', 'expectedDate', 'reason', 'priority'];
+        const activeBtnClasses = ['bg-brand-main', 'text-white', 'font-semibold'];
+        const inactiveBtnClasses = ['bg-gray-200', 'text-gray-700', 'hover:bg-gray-300'];
+
+        const apiHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        function showPageError(message) {
+            pageErrorMessage.textContent = message;
+            pageError.classList.remove('hidden');
+        }
+
+        function setBtnState(selection) {
+          const addActive = (el) => { el.classList.add(...activeBtnClasses); el.classList.remove(...inactiveBtnClasses); };
+          const addInactive = (el) => { el.classList.add(...inactiveBtnClasses); el.classList.remove(...activeBtnClasses); };
+          if (selection === 'today') { addActive(todayBtn); addInactive(tomorrowBtn); }
+          else { addActive(tomorrowBtn); addInactive(todayBtn); }
+        }
+
+        function updateSelectedDate(selection) {
+          const date = new Date();
+          if (selection === 'tomorrow') date.setDate(date.getDate() + 1);
+          
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          expectedDateInput.value = `${year}-${month}-${day}`;
+          
+          const displayFormat = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+          selectedDateDisplay.textContent = `Ngày chọn là: ${displayFormat}`;
+          setBtnState(selection);
+          validateField('expectedDate');
+          checkFormValidity();
+        }
+        todayBtn.addEventListener('click', () => { updateSelectedDate('today'); checkFormValidity(); });
+        tomorrowBtn.addEventListener('click', () => { updateSelectedDate('tomorrow'); checkFormValidity(); });
+        
+        function validateField(fieldName) {
+            const field = form.elements[fieldName];
+            if (!field) return true;
+            if (field.type === 'hidden') { return !!field.value; }
+            const errorElement = field.nextElementSibling;
+            let isValid = true;
+            if (field.hasAttribute('required') && (!field.value || field.value.trim() === '')) {
+                if (errorElement) { errorElement.textContent = 'Trường này không được để trống.'; }
+                field.classList.add('input-error');
+                isValid = false;
+            } else {
+                if (errorElement) { errorElement.textContent = ''; }
+                field.classList.remove('input-error');
+            }
+            return isValid;
+        }
+
+        function checkFormValidity() {
+            let isFormValid = true;
+            fields.forEach(fieldName => {
+                if (!validateField(fieldName)) { isFormValid = false; }
+            });
+            submitButton.disabled = !isFormValid;
+        }
+
+        form.addEventListener('input', (e) => {
+            const fieldName = e.target.name || e.target.id;
+            validateField(fieldName);
+            checkFormValidity();
+        });
+        
+        const prioritySelectEl = form.elements.priority;
+        prioritySelectEl.addEventListener('change', () => {
+            const value = prioritySelectEl.value;
+            priorityIndicator.className = 'w-3 h-3 rounded-full mr-2 transition-colors';
+            if (value === 'Thấp') { priorityIndicator.classList.add('bg-green-500'); } 
+            else if (value === 'Trung bình') { priorityIndicator.classList.add('bg-yellow-500'); } 
+            else if (value === 'Cao') { priorityIndicator.classList.add('bg-red-500'); } 
+            else { priorityIndicator.classList.add('bg-gray-300'); }
+        });
+
+        function openModal() {
+          modalBackdrop.classList.remove('hidden');
+          modalBackdrop.classList.add('flex');
+          setTimeout(() => { modalPanel.classList.remove('translate-y-full', 'sm:scale-95'); }, 10);
+        }
+
+        function closeModal() {
+          modalPanel.classList.add('translate-y-full', 'sm:scale-95');
+          setTimeout(() => {
+            modalBackdrop.classList.add('hidden');
+            modalBackdrop.classList.remove('flex');
+          }, 300);
+        }
+        
+        closeModalBtn.addEventListener('click', closeModal);
+        btnClose.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
+        btnNew.addEventListener('click', () => {
+          closeModal();
+          form.reset();
+          fields.forEach(fieldName => {
+            const field = form.elements[fieldName];
+            if(field) {
+              field.classList.remove('input-error');
+              if (field.nextElementSibling) field.nextElementSibling.textContent = '';
+            }
+          });
+          priorityIndicator.className = 'w-3 h-3 rounded-full bg-gray-300 mr-2 transition-colors';
+          updateSelectedDate('today');
+          checkFormValidity();
+        });
+
+        function buildQR(text) {
+          qrContainer.innerHTML = '';
+          new QRCode(qrContainer, { text, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+        }
+
+        function downloadQR() {
+          const canvas = qrContainer.querySelector('canvas');
+          if (!canvas) return;
+          const a = document.createElement('a');
+          a.href = canvas.toDataURL('image/png');
+          a.download = 'qr-dang-ky-xe.png';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+        btnDownloadQR.addEventListener('click', downloadQR);
+
+        async function copyToClipboard(text) {
+          try {
+            await navigator.clipboard.writeText(text);
+            copyMsg.textContent = 'Đã sao chép!';
+          } catch (e) {
+            copyMsg.textContent = 'Lỗi sao chép.';
+          }
+          setTimeout(() => { copyMsg.textContent = ''; }, 2000);
+        }
+        btnCopy.addEventListener('click', () => copyToClipboard(modalLink.value));
+        
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          checkFormValidity();
+          if (submitButton.disabled) return;
+          
+          submitButton.disabled = true;
+          submitButton.textContent = 'Đang xử lý...';
+
+          const data = {
+            employeeName: employeeNameInput.value,
+            employeeDepartment: employeeDepartmentInput.value,
+            supplierName: supplierNameInput.value,
+            expectedDate: expectedDateInput.value,
+            reason: reasonInput.value,
+            priority: prioritySelect.value
+          };
+
+          try {
+              const response = await fetch(`${API_BASE}/requests`, {
+                  method: 'POST',
+                  headers: apiHeaders,
+                  body: JSON.stringify(data)
+              });
+
+              if (!response.ok) {
+                  const err = await response.json();
+                  throw new Error(err.message || 'Server trả về lỗi khi tạo yêu cầu.');
+              }
+              
+              const result = await response.json();
+              const requestId = result.id;
+
+              // *** FIX: Sửa lại đường dẫn tương đối cho đúng với cấu trúc file của bạn ***
+              const driverAppUrl = `../app-tai-xe/driver-register.html?id=${requestId}`;
+              const fullUrl = new URL(driverAppUrl, window.location.href).href;
+
+              modalLink.value = fullUrl;
+              btnOpen.href = fullUrl;
+              buildQR(fullUrl);
+              
+              const dateValue = expectedDateInput.value;
+              if (dateValue) {
+                  const date = new Date(dateValue.replace(/-/g, '/'));
+                  const dateDisplay = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+                  document.getElementById('infoDate').textContent = dateDisplay;
+              }
+              
+              document.getElementById('infoEmp').textContent = data.employeeName || '—';
+              document.getElementById('infoDept').textContent = data.employeeDepartment || '—';
+              document.getElementById('infoSupplier').textContent = data.supplierName || '—';
+              document.getElementById('infoReason').textContent = data.reason || '—';
+              document.getElementById('infoPriority').textContent = data.priority || '—';
+
+              openModal();
+
+          } catch (error) {
+              console.error('Lỗi:', error);
+              showPageError(`Không thể tạo yêu cầu. Chi tiết: ${error.message}`);
+          } finally {
+              submitButton.disabled = false;
+              submitButton.textContent = 'Tạo Link & Mã QR';
+          }
+        });
+
+        // Khởi tạo ban đầu
+        updateSelectedDate('today');
+        checkFormValidity();
+      });
+    </script>
+  </body>
+</html>
