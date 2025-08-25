@@ -190,7 +190,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const token = localStorage.getItem('td_auth_token');
-            // *** FIX: Chuyển sang xác thực phía server, không dựa vào client ***
             if (!token) {
                 window.location.href = './user-login.html';
                 return;
@@ -240,7 +239,7 @@
                 }
             }
 
-            // *** NEW: Hàm fetch đã được thêm header Authorization ***
+            // *** FIX: Hàm fetchWithAuth đã được sửa để thêm header Authorization ***
             async function fetchWithAuth(url, options = {}) {
                 const headers = {
                     ...options.headers,
