@@ -270,15 +270,14 @@ app.put('/api/declarations/:id', upload.fields([
             stream.end(file.buffer);
         });
 
-        // CHANGE: Handle optional file uploads
         const uploadPromises = [];
-        if (files.idCardPhoto && files.idCardPhoto[0]) {
+        if (files && files.idCardPhoto && files.idCardPhoto[0]) {
             uploadPromises.push(uploadToCloudinary(files.idCardPhoto[0]).then(url => ({ key: 'idCardPhoto', url })));
         }
-        if (files.licensePlatePhoto && files.licensePlatePhoto[0]) {
+        if (files && files.licensePlatePhoto && files.licensePlatePhoto[0]) {
             uploadPromises.push(uploadToCloudinary(files.licensePlatePhoto[0]).then(url => ({ key: 'licensePlatePhoto', url })));
         }
-        if (files.vehiclePhoto && files.vehiclePhoto[0]) {
+        if (files && files.vehiclePhoto && files.vehiclePhoto[0]) {
             uploadPromises.push(uploadToCloudinary(files.vehiclePhoto[0]).then(url => ({ key: 'vehiclePhoto', url })));
         }
 
@@ -289,7 +288,6 @@ app.put('/api/declarations/:id', upload.fields([
             vehicle: vehicle._id
         };
         
-        // Add image URLs to the update object if any were uploaded
         if (uploadedImages.length > 0) {
             updateData.imageUrls = {};
             uploadedImages.forEach(img => {
@@ -346,7 +344,8 @@ app.get('/api/registrations/history', verifyToken, async (req, res, next) => {
         const endDate = new Date(end);
         endDate.setHours(23, 59, 59, 999);
         
-        const query = { createdAt: { $gte: startDate, $lte: endDate } };
+        // *** FIX: Changed query to filter by checkInTime instead of createdAt ***
+        const query = { checkInTime: { $gte: startDate, $lte: endDate } };
 
         if (q) {
             const regex = new RegExp(q, 'i');
