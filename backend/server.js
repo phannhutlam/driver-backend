@@ -22,12 +22,15 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Serve static files from the parent directory
 app.use(express.static(path.join(__dirname, '..')));
 
+// Health check endpoint
 app.get('/healthz', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is healthy' });
 });
 
+// Serve the login page as the default route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'cms', 'user-login.html'));
 });
@@ -248,12 +251,9 @@ app.put('/api/declarations/:id', upload.fields([
         const { driverName, driverIdCard, licensePlate, vehicleType } = req.body;
         const files = req.files;
 
-        if (!files || !files.idCardPhoto || !files.licensePlatePhoto || !files.vehiclePhoto) {
-            return res.status(400).json({ message: 'Vui lòng tải lên đủ 3 hình ảnh: CCCD, Biển số, và Toàn cảnh xe.' });
-        }
-
         if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ message: 'ID không hợp lệ.' });
 
+        // Upsert vehicle information
         const normalizedLicensePlate = licensePlate.toUpperCase().replace(/[^A-Z0-9]/g, '');
         let vehicle = await Vehicle.findOneAndUpdate(
             { licensePlate: normalizedLicensePlate },
@@ -261,6 +261,7 @@ app.put('/api/declarations/:id', upload.fields([
             { new: true, upsert: true }
         );
 
+        // Helper function to upload a file to Cloudinary
         const uploadToCloudinary = (file) => new Promise((resolve, reject) => {
             if (!process.env.CLOUDINARY_CLOUD_NAME) {
                 return reject(new Error("Chưa cấu hình Cloudinary."));
@@ -269,17 +270,34 @@ app.put('/api/declarations/:id', upload.fields([
             stream.end(file.buffer);
         });
 
-        const [idCardUrl, licensePlateUrl, vehicleUrl] = await Promise.all([
-            uploadToCloudinary(files.idCardPhoto[0]),
-            uploadToCloudinary(files.licensePlatePhoto[0]),
-            uploadToCloudinary(files.vehiclePhoto[0])
-        ]);
+        // CHANGE: Handle optional file uploads
+        const uploadPromises = [];
+        if (files.idCardPhoto && files.idCardPhoto[0]) {
+            uploadPromises.push(uploadToCloudinary(files.idCardPhoto[0]).then(url => ({ key: 'idCardPhoto', url })));
+        }
+        if (files.licensePlatePhoto && files.licensePlatePhoto[0]) {
+            uploadPromises.push(uploadToCloudinary(files.licensePlatePhoto[0]).then(url => ({ key: 'licensePlatePhoto', url })));
+        }
+        if (files.vehiclePhoto && files.vehiclePhoto[0]) {
+            uploadPromises.push(uploadToCloudinary(files.vehiclePhoto[0]).then(url => ({ key: 'vehiclePhoto', url })));
+        }
 
-        const updatedDeclaration = await Registration.findByIdAndUpdate(id, {
+        const uploadedImages = await Promise.all(uploadPromises);
+
+        const updateData = {
             status: 'Đã khai báo',
-            imageUrls: { idCardPhoto: idCardUrl, licensePlatePhoto: licensePlateUrl, vehiclePhoto: vehicleUrl },
             vehicle: vehicle._id
-        }, { new: true });
+        };
+        
+        // Add image URLs to the update object if any were uploaded
+        if (uploadedImages.length > 0) {
+            updateData.imageUrls = {};
+            uploadedImages.forEach(img => {
+                updateData.imageUrls[img.key] = img.url;
+            });
+        }
+
+        const updatedDeclaration = await Registration.findByIdAndUpdate(id, updateData, { new: true });
 
         if (!updatedDeclaration) return res.status(404).json({ message: 'Không tìm thấy yêu cầu.' });
         res.status(200).json({ message: 'Khai báo thành công!' });
@@ -318,7 +336,6 @@ const handleCheckAction = async (req, res, action) => {
 app.post('/api/registrations/:id/checkin', verifyToken, (req, res) => handleCheckAction(req, res, 'checkin'));
 app.post('/api/registrations/:id/checkout', verifyToken, (req, res) => handleCheckAction(req, res, 'checkout'));
 
-// *** FIX: Thay đổi middleware từ verifyAdmin sang verifyToken ***
 app.get('/api/registrations/history', verifyToken, async (req, res, next) => {
     try {
         const { start, end, q } = req.query;
