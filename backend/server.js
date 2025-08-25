@@ -344,8 +344,8 @@ app.get('/api/registrations/history', verifyToken, async (req, res, next) => {
         const endDate = new Date(end);
         endDate.setHours(23, 59, 59, 999);
         
-        // *** FIX: Changed query to filter by checkInTime instead of createdAt ***
-        const query = { checkInTime: { $gte: startDate, $lte: endDate } };
+        // *** FIX: Changed query to filter by expectedDate to see all planned entries ***
+        const query = { expectedDate: { $gte: startDate, $lte: endDate } };
 
         if (q) {
             const regex = new RegExp(q, 'i');
