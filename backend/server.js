@@ -147,14 +147,13 @@ app.post('/api/auth/login', async (req, res, next) => {
     }
 });
 
-// *** FIX: Bổ sung đầy đủ các API quản lý người dùng ***
 // B. API Quản lý (Admin)
 const adminRouter = express.Router();
-adminRouter.use(verifyAdmin); // Áp dụng middleware cho tất cả route admin
+adminRouter.use(verifyAdmin);
 
 adminRouter.get('/users', async (req, res, next) => {
     try {
-        const users = await User.find({}, '-password'); // Lấy tất cả user, trừ trường password
+        const users = await User.find({}, '-password');
         res.json(users);
     } catch (error) {
         next(error);
@@ -202,7 +201,7 @@ adminRouter.delete('/users/:id', async (req, res, next) => {
         next(error);
     }
 });
-app.use('/api/admin', adminRouter); // Gắn router admin vào app
+app.use('/api/admin', adminRouter);
 
 // C. API Nghiệp vụ
 app.post('/api/requests', async (req, res, next) => {
@@ -319,7 +318,8 @@ const handleCheckAction = async (req, res, action) => {
 app.post('/api/registrations/:id/checkin', verifyToken, (req, res) => handleCheckAction(req, res, 'checkin'));
 app.post('/api/registrations/:id/checkout', verifyToken, (req, res) => handleCheckAction(req, res, 'checkout'));
 
-app.get('/api/registrations/history', verifyAdmin, async (req, res, next) => {
+// *** FIX: Thay đổi middleware từ verifyAdmin sang verifyToken ***
+app.get('/api/registrations/history', verifyToken, async (req, res, next) => {
     try {
         const { start, end, q } = req.query;
         if (!start || !end) return res.status(400).json({ message: 'Ngày bắt đầu và kết thúc là bắt buộc.' });
