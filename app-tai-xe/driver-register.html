@@ -111,8 +111,9 @@
         </div>
 
         <div class="pt-4 border-t">
-            <h3 class="text-base font-semibold text-gray-800 mb-2">Hình ảnh xác thực <span class="text-red-500">*</span></h3>
-            <p class="text-sm text-gray-500 mb-4">Vui lòng tải lên đủ 3 ảnh để hoàn tất.</p>
+            <!-- CHANGE: Updated heading and paragraph to indicate images are optional -->
+            <h3 class="text-base font-semibold text-gray-800 mb-2">Hình ảnh xác thực (Không bắt buộc)</h3>
+            <p class="text-sm text-gray-500 mb-4">Bạn có thể tải lên ảnh để giúp bảo vệ xác minh nhanh hơn.</p>
             <div id="fileUploadError" class="error-message font-medium mb-4"></div>
             <div class="space-y-4">
                 <div>
@@ -122,7 +123,8 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             <div class="flex justify-center text-sm text-gray-600 mt-2">
                                 <span>Nhấn để tải lên hoặc kéo và thả</span>
-                                <input id="idCardPhoto" name="idCardPhoto" type="file" class="sr-only" accept="image/*" capture="environment" required>
+                                <!-- CHANGE: Removed 'required' attribute -->
+                                <input id="idCardPhoto" name="idCardPhoto" type="file" class="sr-only" accept="image/*" capture="environment">
                             </div>
                             <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF</p>
                         </div>
@@ -142,7 +144,8 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             <div class="flex justify-center text-sm text-gray-600 mt-2">
                                 <span>Nhấn để tải lên hoặc kéo và thả</span>
-                                <input id="licensePlatePhoto" name="licensePlatePhoto" type="file" class="sr-only" accept="image/*" capture="environment" required>
+                                <!-- CHANGE: Removed 'required' attribute -->
+                                <input id="licensePlatePhoto" name="licensePlatePhoto" type="file" class="sr-only" accept="image/*" capture="environment">
                             </div>
                             <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF</p>
                         </div>
@@ -162,7 +165,8 @@
                             <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             <div class="flex justify-center text-sm text-gray-600 mt-2">
                                 <span>Nhấn để tải lên hoặc kéo và thả</span>
-                                <input id="vehiclePhoto" name="vehiclePhoto" type="file" class="sr-only" accept="image/*" capture="environment" required>
+                                <!-- CHANGE: Removed 'required' attribute -->
+                                <input id="vehiclePhoto" name="vehiclePhoto" type="file" class="sr-only" accept="image/*" capture="environment">
                             </div>
                             <p class="text-xs text-gray-500 mt-1">PNG, JPG, GIF</p>
                         </div>
@@ -195,6 +199,7 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', async function() {
+      const API_BASE = '/api';
       const driverForm = document.getElementById('driverForm');
       const submitButton = document.getElementById('submitButton');
       const loadingSpinner = document.getElementById('loadingSpinner');
@@ -221,7 +226,7 @@
       }
 
       try {
-          const response = await fetch(`/api/requests/${registrationId}`);
+          const response = await fetch(`${API_BASE}/requests/${registrationId}`);
           if (!response.ok) {
               const err = await response.json();
               throw new Error(err.message || 'Không tìm thấy yêu cầu hoặc yêu cầu không hợp lệ.');
@@ -246,22 +251,22 @@
           infoBox.classList.remove('hidden');
 
       } catch (error) {
-          formSection.innerHTML = `<p class="text-center text-red-500 font-bold">Lỗi: ${error.message}</p>`;
+          formErrorMessage.textContent = error.message;
+          formError.classList.remove('hidden');
           return;
       }
       
-      // SỬA LỖI: Khôi phục lại toàn bộ logic JavaScript bị thiếu
       function validateTextField(fieldName, showError = true) {
         const field = textFields[fieldName];
         const value = field.input.value.trim();
         let isValid = true;
-        if (value === '') {
+        if (field.input.required && value === '') {
           if (showError) {
             field.input.classList.add('input-error');
             field.error.textContent = 'Trường này không được để trống.';
           }
           isValid = false;
-        } else if (field.regex && !field.regex.test(value)) {
+        } else if (value !== '' && field.regex && !field.regex.test(value)) {
           if (showError) {
             field.input.classList.add('input-error');
             field.error.textContent = field.errorMessage;
@@ -277,11 +282,12 @@
       function checkFormValidity() {
         let isFormValid = true;
         for (const fieldName in textFields) {
-          if (!validateTextField(fieldName, false)) isFormValid = false;
+          if (!validateTextField(fieldName, false)) {
+            isFormValid = false;
+          }
         }
-        if (Object.keys(compressedFiles).length !== 3) {
-          isFormValid = false;
-        }
+        // CHANGE: Removed the check for the number of files.
+        // The form is valid as long as the text fields are valid.
         submitButton.disabled = !isFormValid;
       }
 
@@ -310,7 +316,7 @@
               console.error('Lỗi nén ảnh:', error);
               compressedFiles[key] = file;
           }
-          checkFormValidity();
+          // No need to call checkFormValidity() here as file uploads are optional
       }
       
       for (const fieldName in textFields) {
@@ -343,7 +349,9 @@
               checkFormValidity();
           });
           wrapper.addEventListener('click', () => {
-              input.click();
+              if (!input.files[0]) {
+                  input.click();
+              }
           });
       });
 
@@ -352,18 +360,13 @@
         
         let isAllTextValid = true;
         for (const fieldName in textFields) {
-          if (!validateTextField(fieldName, true)) isAllTextValid = false;
+          if (!validateTextField(fieldName, true)) {
+            isAllTextValid = false;
+          }
         }
         
-        let areAllFilesIn = true;
-        if (Object.keys(compressedFiles).length !== 3) {
-          areAllFilesIn = false;
-          fileUploadError.textContent = 'Vui lòng tải lên đủ 3 hình ảnh.';
-        } else {
-          fileUploadError.textContent = '';
-        }
-
-        if (!isAllTextValid || !areAllFilesIn) return;
+        // CHANGE: Removed the check for files before submitting.
+        if (!isAllTextValid) return;
         
         submitButton.disabled = true;
         loadingSpinner.classList.remove('hidden');
@@ -372,14 +375,15 @@
 
         const formData = new FormData();
         for(const fieldName in textFields) { formData.append(fieldName, textFields[fieldName].input.value); }
-        
-        // *** FIX: Kiểm tra sự tồn tại của tệp trước khi thêm vào formData ***
-        if (compressedFiles.idCardPhoto) formData.append('idCardPhoto', compressedFiles.idCardPhoto);
-        if (compressedFiles.licensePlatePhoto) formData.append('licensePlatePhoto', compressedFiles.licensePlatePhoto);
-        if (compressedFiles.vehiclePhoto) formData.append('vehiclePhoto', compressedFiles.vehiclePhoto);
+        for (const key in compressedFiles) { 
+          // Only append if the file exists
+          if(compressedFiles[key]) {
+            formData.append(key, compressedFiles[key]); 
+          }
+        }
         
         try {
-            const response = await fetch(`/api/declarations/${registrationId}`, {
+            const response = await fetch(`${API_BASE}/declarations/${registrationId}`, {
                 method: 'PUT',
                 body: formData
             });
