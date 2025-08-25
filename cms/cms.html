@@ -239,7 +239,6 @@
                 }
             }
 
-            // *** FIX: Hàm fetchWithAuth đã được sửa để thêm header Authorization ***
             async function fetchWithAuth(url, options = {}) {
                 const headers = {
                     ...options.headers,
@@ -289,9 +288,14 @@
                 tableBody.parentElement.parentElement.style.display = data.length > 0 ? 'block' : 'none';
                 
                 let totalDurationMinutes = 0;
+                let completedTrips = 0;
+
                 data.forEach(item => {
                     const duration = calculateDuration(item.checkInTime, item.checkOutTime);
-                    totalDurationMinutes += duration.minutes;
+                    if (item.checkInTime && item.checkOutTime) {
+                        totalDurationMinutes += duration.minutes;
+                        completedTrips++;
+                    }
                     const imagesHTML = `
                         <div class="flex items-center gap-1">
                             ${item.imageUrls?.idCardPhoto ? `<a href="${item.imageUrls.idCardPhoto}" class="img-link"><img src="${item.imageUrls.idCardPhoto}" class="w-10 h-10 object-cover rounded-md border" alt="CCCD"/></a>` : ''}
@@ -314,7 +318,14 @@
                 });
 
                 totalVehiclesEl.textContent = data.length;
-                avgDurationEl.textContent = data.length > 0 ? calculateDuration(0, (totalDurationMinutes / data.length) * 60000).text : '0 phút';
+                
+                // *** FIX: Correctly calculate and display average duration ***
+                if (completedTrips > 0) {
+                    const avgMinutes = totalDurationMinutes / completedTrips;
+                    avgDurationEl.textContent = calculateDuration(0, avgMinutes * 60000).text;
+                } else {
+                    avgDurationEl.textContent = 'N/A';
+                }
             }
             
             async function fetchUsers() {
